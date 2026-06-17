@@ -1534,8 +1534,6 @@ function toggleCollapsible(id, toggleEl){
 }
 
 // ── F1 Detail Modal ──
-// Driver images from OpenF1 API (official F1 CDN headshots)
-// Team images from Wikimedia Commons direct file URLs (stable, not article thumbnails)
 
 // Map driverId → F1 permanent number for OpenF1 lookup
 const DRIVER_NUMBERS = {
@@ -1547,20 +1545,6 @@ const DRIVER_NUMBERS = {
   'isack_hadjar':6,'jack_doohan':7,'gabriel_bortoleto':5,'andrea_kimi_antonelli':12,
 };
 
-// Team car/livery images — Wikimedia Commons direct file API (reliable, no article dependency)
-const TEAM_IMAGES = {
-  'mclaren':     'McLaren_MCL38_front.jpg',
-  'red_bull':    'Max_Verstappen_2023_Japanese_GP.jpg',
-  'ferrari':     'Charles_Leclerc_2024_Canadian_GP.jpg',
-  'mercedes':    'Mercedes-AMG_F1_W15_front.jpg',
-  'aston_martin':'Aston_Martin_AMR24_front.jpg',
-  'alpine':      'Alpine_A524_front.jpg',
-  'williams':    'Williams_FW46_front.jpg',
-  'haas':        'Haas_VF-24_front.jpg',
-  'rb':          'RB_VCARB_01_front.jpg',
-  'sauber':      'Stake_F1_C44_front.jpg',
-};
-
 const NATIONALITY_FLAGS = {
   'British':'🇬🇧','German':'🇩🇪','Spanish':'🇪🇸','Finnish':'🇫🇮','Dutch':'🇳🇱','French':'🇫🇷',
   'Australian':'🇦🇺','Canadian':'🇨🇦','Mexican':'🇲🇽','Brazilian':'🇧🇷','Japanese':'🇯🇵',
@@ -1568,28 +1552,16 @@ const NATIONALITY_FLAGS = {
   'New Zealander':'🇳🇿','Argentine':'🇦🇷','Swiss':'🇨🇭','Austrian':'🇦🇹',
 };
 
-// Fetch driver headshot from OpenF1 — returns the headshot_url from official F1 CDN
+// Fetch driver headshot from OpenF1 — upgrades transform from 1col (tiny ~67px) to 4col (~270px)
 async function fetchDriverImage(driverNumber){
   if(!driverNumber) return null;
   try {
     const r = await fetch(`https://api.openf1.org/v1/drivers?driver_number=${driverNumber}&session_key=latest`);
     if(!r.ok) return null;
     const d = await r.json();
-    return d?.[0]?.headshot_url || null;
-  } catch(e){ return null; }
-}
-
-// Fetch team image from Wikimedia Commons file API
-async function fetchTeamImage(constructorId){
-  const file = TEAM_IMAGES[constructorId];
-  if(!file) return null;
-  try {
-    const url = `https://en.wikipedia.org/w/api.php?action=query&titles=File:${encodeURIComponent(file)}&prop=imageinfo&iiprop=url&format=json&origin=*`;
-    const r = await fetch(url);
-    const d = await r.json();
-    const pages = d?.query?.pages;
-    const page = pages?.[Object.keys(pages)[0]];
-    return page?.imageinfo?.[0]?.url || null;
+    const url = d?.[0]?.headshot_url;
+    if(!url) return null;
+    return url.replace('/1col/', '/4col/');
   } catch(e){ return null; }
 }
 
@@ -1638,6 +1610,8 @@ function closeDetailModal(e, force){
     document.getElementById('detail-body').innerHTML='<div class="detail-loading"><div class="spinner"></div>Loading...</div>';
     document.getElementById('detail-hero-accent').style.background='';
     document.getElementById('detail-hero').style.background='#111';
+    const w=document.getElementById('team-hero-watermark');
+    if(w) w.textContent='';
   },300);
 }
 
@@ -1688,22 +1662,24 @@ async function openTeamDetail(constructorId, name, teamCol, nationality){
   openDetailModal();
   const heroEl=document.getElementById('detail-hero');
   const accentEl=document.getElementById('detail-hero-accent');
-  heroEl.style.background=`linear-gradient(160deg, ${teamCol}33 0%, #0e0e0f 100%)`;
-  accentEl.style.background=`linear-gradient(135deg, ${teamCol}55 0%, transparent 70%)`;
-
-  const [imgSrc, statsEntry]=await Promise.all([
-    fetchTeamImage(constructorId),
-    fetchTeamStats(constructorId)
-  ]);
-
+  // Team hero: full color gradient with team acronym as large watermark — no external image needed
+  const acronym = name.replace(/^(Scuderia|Oracle|Mercedes-AMG Petronas|Stake F1 Team Kick|BWT Alpine|MoneyGram|Visa Cash App)\s*/i,'').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,3);
+  heroEl.style.background=`linear-gradient(160deg, ${teamCol} 0%, ${teamCol}88 50%, #0e0e0f 100%)`;
+  accentEl.style.background='none';
+  // Hide the img element — hero is pure color
   const imgEl=document.getElementById('detail-hero-img');
-  if(imgSrc){
-    imgEl.src=imgSrc;
-    imgEl.style.display='';
-    imgEl.onerror=()=>{ imgEl.style.display='none'; };
-  } else {
-    imgEl.style.display='none';
+  imgEl.style.display='none';
+  // Inject acronym watermark into hero
+  let watermark=document.getElementById('team-hero-watermark');
+  if(!watermark){
+    watermark=document.createElement('div');
+    watermark.id='team-hero-watermark';
+    watermark.style.cssText='position:absolute;bottom:-10px;right:12px;font-family:"Bebas Neue",sans-serif;font-size:120px;line-height:1;color:rgba(0,0,0,0.25);pointer-events:none;letter-spacing:-2px;user-select:none';
+    heroEl.appendChild(watermark);
   }
+  watermark.textContent=acronym;
+
+  const statsEntry = await fetchTeamStats(constructorId);
 
   const natFlag=NATIONALITY_FLAGS[nationality]||'🏁';
   const pts=statsEntry?Math.round(parseFloat(statsEntry.points||0)):null;
@@ -1720,7 +1696,7 @@ async function openTeamDetail(constructorId, name, teamCol, nationality){
       <div class="detail-stat-cell"><div class="detail-stat-val">${pos||'—'}</div><div class="detail-stat-label">Position</div></div>
       <div class="detail-stat-cell"><div class="detail-stat-val">${pts}</div><div class="detail-stat-label">Points</div></div>
       <div class="detail-stat-cell"><div class="detail-stat-val">${wins}</div><div class="detail-stat-label">Wins</div></div>
-    </div>`:''}
+    </div>`:'<div class="detail-loading" style="padding:20px 0"><span style="color:var(--faint);font-size:12px">No standings data available</span></div>'}
   `;
 }
 
