@@ -1534,23 +1534,31 @@ function toggleCollapsible(id, toggleEl){
 }
 
 // ── F1 Detail Modal ──
-// Driver images via Wikipedia API; team images via Wikimedia Commons
-const DRIVER_WIKI = {
-  'max_verstappen':'Max_Verstappen','lando_norris':'Lando_Norris','charles_leclerc':'Charles_Leclerc',
-  'oscar_piastri':'Oscar_Piastri','carlos_sainz':'Carlos_Sainz','george_russell':'George_Russell',
-  'lewis_hamilton':'Lewis_Hamilton','fernando_alonso':'Fernando_Alonso','lance_stroll':'Lance_Stroll',
-  'pierre_gasly':'Pierre_Gasly','esteban_ocon':'Esteban_Ocon','alexander_albon':'Alexander_Albon',
-  'franco_colapinto':'Franco_Colapinto','oliver_bearman':'Oliver_Bearman','nico_hulkenberg':'Nico_Hülkenberg',
-  'kevin_magnussen':'Kevin_Magnussen','valtteri_bottas':'Valtteri_Bottas','guanyu_zhou':'Zhou_Guanyu',
-  'yuki_tsunoda':'Yuki_Tsunoda','liam_lawson':'Liam_Lawson','isack_hadjar':'Isack_Hadjar',
-  'jack_doohan':'Jack_Doohan','gabriel_bortoleto':'Gabriel_Bortoleto','andrea_kimi_antonelli':'Kimi_Antonelli',
+// Driver images from OpenF1 API (official F1 CDN headshots)
+// Team images from Wikimedia Commons direct file URLs (stable, not article thumbnails)
+
+// Map driverId → F1 permanent number for OpenF1 lookup
+const DRIVER_NUMBERS = {
+  'max_verstappen':1,'lando_norris':4,'charles_leclerc':16,'oscar_piastri':81,
+  'carlos_sainz':55,'george_russell':63,'lewis_hamilton':44,'fernando_alonso':14,
+  'lance_stroll':18,'pierre_gasly':10,'esteban_ocon':31,'alexander_albon':23,
+  'franco_colapinto':43,'oliver_bearman':87,'nico_hulkenberg':27,'kevin_magnussen':20,
+  'valtteri_bottas':77,'guanyu_zhou':24,'yuki_tsunoda':22,'liam_lawson':30,
+  'isack_hadjar':6,'jack_doohan':7,'gabriel_bortoleto':5,'andrea_kimi_antonelli':12,
 };
 
-const TEAM_WIKI = {
-  'mclaren':'McLaren_F1_Team','red_bull':'Red_Bull_Racing','ferrari':'Scuderia_Ferrari',
-  'mercedes':'Mercedes-AMG_Petronas_F1_Team','aston_martin':'Aston_Martin_Aramco_F1_Team',
-  'alpine':'Alpine_F1_Team','williams':'Williams_Racing','haas':'Haas_F1_Team',
-  'rb':'Racing_Bulls','sauber':'Stake_F1_Team_Kick_Sauber',
+// Team car/livery images — Wikimedia Commons direct file API (reliable, no article dependency)
+const TEAM_IMAGES = {
+  'mclaren':     'McLaren_MCL38_front.jpg',
+  'red_bull':    'Max_Verstappen_2023_Japanese_GP.jpg',
+  'ferrari':     'Charles_Leclerc_2024_Canadian_GP.jpg',
+  'mercedes':    'Mercedes-AMG_F1_W15_front.jpg',
+  'aston_martin':'Aston_Martin_AMR24_front.jpg',
+  'alpine':      'Alpine_A524_front.jpg',
+  'williams':    'Williams_FW46_front.jpg',
+  'haas':        'Haas_VF-24_front.jpg',
+  'rb':          'RB_VCARB_01_front.jpg',
+  'sauber':      'Stake_F1_C44_front.jpg',
 };
 
 const NATIONALITY_FLAGS = {
@@ -1560,28 +1568,42 @@ const NATIONALITY_FLAGS = {
   'New Zealander':'🇳🇿','Argentine':'🇦🇷','Swiss':'🇨🇭','Austrian':'🇦🇹',
 };
 
-async function fetchWikiImage(title){
+// Fetch driver headshot from OpenF1 — returns the headshot_url from official F1 CDN
+async function fetchDriverImage(driverNumber){
+  if(!driverNumber) return null;
   try {
-    const url=`https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(title)}&prop=pageimages&pithumbsize=600&format=json&origin=*`;
-    const r=await fetch(url);
-    const d=await r.json();
-    const pages=d?.query?.pages;
-    const page=pages?.[Object.keys(pages)[0]];
-    return page?.thumbnail?.source||null;
+    const r = await fetch(`https://api.openf1.org/v1/drivers?driver_number=${driverNumber}&session_key=latest`);
+    if(!r.ok) return null;
+    const d = await r.json();
+    return d?.[0]?.headshot_url || null;
+  } catch(e){ return null; }
+}
+
+// Fetch team image from Wikimedia Commons file API
+async function fetchTeamImage(constructorId){
+  const file = TEAM_IMAGES[constructorId];
+  if(!file) return null;
+  try {
+    const url = `https://en.wikipedia.org/w/api.php?action=query&titles=File:${encodeURIComponent(file)}&prop=imageinfo&iiprop=url&format=json&origin=*`;
+    const r = await fetch(url);
+    const d = await r.json();
+    const pages = d?.query?.pages;
+    const page = pages?.[Object.keys(pages)[0]];
+    return page?.imageinfo?.[0]?.url || null;
   } catch(e){ return null; }
 }
 
 async function fetchDriverStats(driverId){
   try {
-    const [standRes, careerRes] = await Promise.all([
+    const [standRes, seasonRes] = await Promise.all([
       fetch(`https://api.jolpi.ca/ergast/f1/current/driverStandings.json`),
-      fetch(`https://api.jolpi.ca/ergast/f1/drivers/${driverId}/results.json?limit=1000`)
+      fetch(`https://api.jolpi.ca/ergast/f1/current/drivers/${driverId}/results.json`)
     ]);
-    const [standData, careerData] = await Promise.all([standRes.json(), careerRes.json()]);
+    const [standData, seasonData] = await Promise.all([standRes.json(), seasonRes.json()]);
     const standings = standData?.MRData?.StandingsTable?.StandingsLists?.[0]?.DriverStandings||[];
     const entry = standings.find(s=>s.Driver?.driverId===driverId)||null;
-    // Count career podiums from results
-    const results = careerData?.MRData?.RaceTable?.Races||[];
+    // Count podiums from this season only
+    const results = seasonData?.MRData?.RaceTable?.Races||[];
     const podiums = results.filter(r=>{
       const pos = parseInt(r.Results?.[0]?.position||99);
       return pos <= 3;
@@ -1626,9 +1648,9 @@ async function openDriverDetail(driverId, fullName, team, number, teamCol, natio
   heroEl.style.background=`linear-gradient(160deg, ${teamCol}33 0%, #0e0e0f 100%)`;
   accentEl.style.background=`linear-gradient(135deg, ${teamCol}55 0%, transparent 60%)`;
 
-  const wikiKey=DRIVER_WIKI[driverId];
+  const driverNum = DRIVER_NUMBERS[driverId] || parseInt(number) || null;
   const [imgSrc, { entry: statsEntry, podiums }]=await Promise.all([
-    wikiKey?fetchWikiImage(wikiKey):Promise.resolve(null),
+    fetchDriverImage(driverNum),
     fetchDriverStats(driverId)
   ]);
 
@@ -1669,9 +1691,8 @@ async function openTeamDetail(constructorId, name, teamCol, nationality){
   heroEl.style.background=`linear-gradient(160deg, ${teamCol}33 0%, #0e0e0f 100%)`;
   accentEl.style.background=`linear-gradient(135deg, ${teamCol}55 0%, transparent 70%)`;
 
-  const wikiKey=TEAM_WIKI[constructorId];
   const [imgSrc, statsEntry]=await Promise.all([
-    wikiKey?fetchWikiImage(wikiKey):Promise.resolve(null),
+    fetchTeamImage(constructorId),
     fetchTeamStats(constructorId)
   ]);
 
