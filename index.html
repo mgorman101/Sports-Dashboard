@@ -1,0 +1,1418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="My Sports">
+<title>My Sports</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Bebas+Neue&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --f1-red:#E10600; --nhl-blue:#0052A5; --nfl-blue:#013369; --nfl-red:#D50A0A;
+  --bg:#0e0e0f; --surface:#1a1a1c; --surface2:#242426; --border:rgba(255,255,255,0.08);
+  --text:#f0f0f0; --muted:#888; --faint:#555;
+  --font-d:'Bebas Neue',sans-serif; --font-b:'DM Sans',sans-serif; --font-m:'DM Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{background:var(--bg);color:var(--text);font-family:var(--font-b);min-height:100vh;overscroll-behavior:none}
+.app{max-width:430px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom,16px)}
+.header{padding:56px 20px 16px;display:flex;align-items:flex-end;justify-content:space-between}
+.header-wordmark{font-family:var(--font-d);font-size:42px;line-height:1;letter-spacing:1px;background:linear-gradient(90deg,#fff 60%,var(--muted));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.header-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.sport-pills{display:flex;gap:6px}
+.sport-pill{font-size:10px;font-weight:600;letter-spacing:.08em;padding:3px 8px;border-radius:20px;text-transform:uppercase}
+.f1-pill{background:var(--f1-red);color:#fff}
+.nhl-pill{background:var(--nhl-blue);color:#fff}
+.nfl-pill{background:var(--nfl-blue);color:#fff}
+.last-updated{font-family:var(--font-m);font-size:10px;color:var(--faint)}
+.tabs{display:flex;padding:0 20px;border-bottom:1px solid var(--border);margin-bottom:20px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:1;min-width:60px;padding:12px 0;text-align:center;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:color .2s,border-color .2s;letter-spacing:.03em;user-select:none;white-space:nowrap}
+.tab.active[data-tab="f1"]{color:var(--f1-red);border-bottom-color:var(--f1-red)}
+.tab.active[data-tab="nhl"]{color:#4a9eff;border-bottom-color:#4a9eff}
+.tab.active[data-tab="news"]{color:#fff;border-bottom-color:#fff}
+.tab.active[data-tab="nfl"]{color:#5b8fff;border-bottom-color:#5b8fff}
+.panel{display:none;padding:0 16px;flex-direction:column;gap:16px}
+.panel.active{display:flex}
+.section-label{font-family:var(--font-m);font-size:10px;font-weight:500;color:var(--faint);text-transform:uppercase;letter-spacing:.12em;padding:0 4px;margin-bottom:-8px}
+.card{background:var(--surface);border-radius:16px;border:1px solid var(--border);overflow:hidden}
+.card-live{background:var(--surface);border-radius:16px;overflow:hidden;border:1px solid rgba(225,6,0,.6);box-shadow:0 0 18px rgba(225,6,0,.15)}
+.card-inner{padding:16px}
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:3px 9px;border-radius:20px}
+.badge-live{background:rgba(225,6,0,.15);color:var(--f1-red)}
+.badge-live::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--f1-red);animation:pulse 1.2s ease-in-out infinite}
+.badge-final{background:var(--surface2);color:var(--muted)}
+.badge-upcoming{background:var(--surface2);color:var(--muted)}
+.badge-weekend{background:rgba(225,6,0,.12);color:#ff6b47}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+/* Race weekend */
+.race-meta{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px}
+.race-title{font-size:16px;font-weight:600}
+.race-subtitle{font-size:12px;color:var(--muted);margin-top:3px}
+.session-info{margin-bottom:12px;padding:10px 12px;background:rgba(225,6,0,.07);border-radius:10px;border:1px solid rgba(225,6,0,.15);display:flex;align-items:center;justify-content:space-between}
+.session-name{font-size:13px;font-weight:500;color:var(--f1-red)}
+.weekend-schedule{display:flex;flex-direction:column;gap:4px;margin-top:4px}
+.session-row{display:flex;justify-content:space-between;align-items:center;padding:9px 12px;border-radius:10px;background:var(--surface2);cursor:pointer;transition:background .15s}
+.session-row:hover{background:#2e2e30}
+.session-row.live-row{background:rgba(225,6,0,.1);border:1px solid rgba(225,6,0,.2)}
+.session-row.has-results{cursor:pointer}
+.session-row-left{display:flex;align-items:center;gap:8px}
+.session-row-name{font-size:13px}
+.session-row-right{display:flex;align-items:center;gap:8px}
+.session-row-time{font-family:var(--font-m);font-size:11px;color:var(--muted)}
+.session-row-live-badge{font-family:var(--font-m);font-size:10px;color:var(--f1-red);font-weight:500}
+.chevron{font-size:11px;color:var(--faint);transition:transform .2s}
+/* Session results drawer */
+.session-drawer{display:none;background:var(--bg);border-top:1px solid var(--border);overflow:hidden}
+.session-drawer.open{display:block}
+.drawer-inner{padding:12px}
+.drawer-loading{padding:20px;text-align:center;font-family:var(--font-m);font-size:11px;color:var(--faint)}
+.result-row{display:flex;align-items:center;gap:10px;padding:7px 8px;border-radius:8px}
+.result-row:nth-child(odd){background:rgba(255,255,255,.02)}
+.result-pos{font-family:var(--font-m);font-size:12px;color:var(--faint);width:18px}
+.result-pos.gold{color:#d4a017}
+.result-bar{width:3px;height:24px;border-radius:2px;flex-shrink:0}
+.result-name{flex:1;font-size:13px}
+.result-team{font-size:10px;color:var(--muted)}
+.result-time{font-family:var(--font-m);font-size:11px;color:var(--muted)}
+/* Standings */
+.standings-table{width:100%}
+.standings-row{display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--border)}
+.standings-row:last-child{border-bottom:none}
+.standings-row.highlight{background:rgba(255,255,255,.03)}
+.s-pos{font-family:var(--font-m);font-size:12px;color:var(--faint);width:20px}
+.s-name{flex:1;font-size:14px}
+.s-pts{font-family:var(--font-m);font-size:13px;font-weight:500}
+.s-pts-label{font-size:10px;color:var(--faint);margin-left:2px}
+.s-gap{font-family:var(--font-m);font-size:11px;color:var(--faint);min-width:48px;text-align:right}
+/* Countdown */
+.countdown-card{padding:16px}
+.countdown-row{display:flex;justify-content:space-between;align-items:center}
+.countdown-title{font-size:15px;font-weight:500}
+.countdown-sub{font-size:12px;color:var(--muted);margin-top:3px}
+.countdown-num{font-family:var(--font-d);font-size:38px;color:var(--f1-red);line-height:1}
+.countdown-unit{font-family:var(--font-m);font-size:10px;color:var(--faint);text-align:right;letter-spacing:.1em}
+/* NHL game */
+.game-status-row{display:flex;justify-content:center;margin-bottom:12px}
+.matchup{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.team-block{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px}
+.team-logo{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--font-d);font-size:16px;letter-spacing:1px}
+.team-name{font-size:12px;color:var(--muted);text-align:center}
+.score-area{display:flex;align-items:center;gap:10px}
+.score-num{font-family:var(--font-d);font-size:44px;color:var(--text);line-height:1}
+.score-sep{font-size:20px;color:var(--faint)}
+.game-detail{text-align:center;font-family:var(--font-m);font-size:11px;color:var(--faint);margin-top:10px}
+/* Game stats bar */
+.game-stats{display:flex;justify-content:space-around;margin-top:12px;padding-top:10px;border-top:1px solid var(--border)}
+.stat-col{display:flex;flex-direction:column;align-items:center;gap:3px}
+.stat-val{font-family:var(--font-m);font-size:15px;font-weight:500;color:var(--text)}
+.stat-label{font-size:10px;color:var(--faint);letter-spacing:.05em;text-transform:uppercase}
+.pp-badge{font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;background:rgba(255,180,0,.12);color:#ffb347;border:1px solid rgba(255,180,0,.2)}
+/* NFL game — same structure as NHL */
+.nfl-score-num{font-family:var(--font-d);font-size:44px;color:var(--text);line-height:1}
+/* News */
+.news-filters{display:flex;gap:8px;padding:0 4px;margin-bottom:-4px}
+.news-filter{padding:5px 14px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border);color:var(--muted);background:var(--surface);transition:all .15s;user-select:none}
+.news-filter.active-all{background:rgba(255,255,255,.08);color:#fff;border-color:rgba(255,255,255,.2)}
+.news-filter.active-f1{background:rgba(225,6,0,.12);color:#ff4a47;border-color:rgba(225,6,0,.3)}
+.news-filter.active-nhl{background:rgba(0,82,165,.2);color:#4a9eff;border-color:rgba(0,82,165,.4)}
+.news-filter.active-nfl{background:rgba(1,51,105,.3);color:#5b8fff;border-color:rgba(1,51,105,.5)}
+.news-list{display:flex;flex-direction:column}
+.news-item{display:flex;gap:12px;padding:14px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s}
+.news-item:last-child{border-bottom:none}
+.news-item:hover{background:var(--surface2)}
+.news-item.hidden-item{display:none}
+.news-tag{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:2px 7px;border-radius:4px;white-space:nowrap;height:fit-content;margin-top:2px}
+.tag-f1{background:rgba(225,6,0,.15);color:#ff4a47}
+.tag-nhl{background:rgba(0,82,165,.25);color:#4a9eff}
+.tag-nfl{background:rgba(1,51,105,.3);color:#5b8fff}
+.news-body{flex:1}
+.news-headline{font-size:14px;line-height:1.45;color:var(--text)}
+.news-meta{font-family:var(--font-m);font-size:10px;color:var(--faint);margin-top:5px}
+/* Podium */
+.podium{display:flex;flex-direction:column;gap:6px}
+.podium-row{display:flex;align-items:center;gap:12px;padding:9px 12px;border-radius:10px;background:var(--surface2)}
+.podium-row.p1{background:rgba(255,200,50,.07);border:1px solid rgba(255,200,50,.15)}
+.pos-num{font-family:var(--font-m);font-size:13px;font-weight:500;width:18px;color:var(--muted)}
+.pos-num.gold{color:#d4a017}
+.team-bar{width:3px;height:28px;border-radius:2px}
+.driver-col{flex:1}
+.driver-name{font-size:14px;font-weight:500}
+.driver-team{font-size:11px;color:var(--muted);margin-top:1px}
+.driver-time{font-family:var(--font-m);font-size:12px;color:var(--muted)}
+/* Shared */
+.loading{display:flex;align-items:center;justify-content:center;padding:40px;color:var(--faint);font-family:var(--font-m);font-size:12px;gap:10px}
+.spinner{width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--muted);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.error-msg{padding:16px;background:rgba(225,6,0,.07);border:1px solid rgba(225,6,0,.2);border-radius:10px;font-size:13px;color:#ff6b68;text-align:center}
+.refresh-btn{display:flex;align-items:center;justify-content:center;gap:8px;margin:8px 0;padding:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;color:var(--muted);font-size:13px;font-family:var(--font-b);cursor:pointer;width:100%;transition:background .15s}
+.refresh-btn:hover{background:var(--surface2)}
+.refresh-btn svg{width:15px;height:15px;stroke:var(--muted);fill:none;stroke-width:2}
+/* Settings */
+.tab.active[data-tab="settings"]{color:#aaa;border-bottom-color:#aaa}
+.sport-toggle-row{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--surface);border-radius:14px;border:1px solid var(--border)}
+.sport-toggle-left{display:flex;align-items:center;gap:12px}
+.sport-toggle-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px}
+.sport-toggle-name{font-size:15px;font-weight:500}
+.sport-toggle-desc{font-size:12px;color:var(--muted);margin-top:2px}
+.toggle{position:relative;width:44px;height:26px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0;position:absolute}
+.toggle-track{position:absolute;inset:0;border-radius:13px;background:var(--surface2);border:1px solid var(--border);transition:background .25s,border-color .25s;cursor:pointer}
+.toggle input:checked+.toggle-track{background:#34C759;border-color:#34C759}
+.toggle-thumb{position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.4);transition:transform .25s;pointer-events:none}
+.toggle input:checked~.toggle-thumb{transform:translateX(18px)}
+.settings-info-card{background:var(--surface);border-radius:14px;border:1px solid var(--border);overflow:hidden}
+.settings-info-row{display:flex;justify-content:space-between;align-items:center;padding:13px 16px;border-bottom:1px solid var(--border)}
+.settings-info-row:last-child{border-bottom:none}
+.settings-info-label{font-size:14px;color:var(--text)}
+.settings-info-val{font-family:var(--font-m);font-size:12px;color:var(--muted)}
+.settings-note{font-size:12px;color:var(--faint);text-align:center;padding:4px 8px;line-height:1.5}
+
+/* ── OpenF1 Weather card ── */
+.openf1-section{display:flex;flex-direction:column;gap:10px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+.openf1-row-label{font-family:var(--font-m);font-size:9px;color:var(--faint);text-transform:uppercase;letter-spacing:.12em;margin-bottom:4px}
+.weather-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.weather-cell{background:var(--bg);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:2px}
+.weather-val{font-family:var(--font-d);font-size:22px;line-height:1;color:var(--text)}
+.weather-label{font-size:10px;color:var(--faint);text-transform:uppercase;letter-spacing:.06em}
+.weather-rain{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:6px;background:rgba(100,180,255,.12);color:#64b4ff;border:1px solid rgba(100,180,255,.2)}
+.weather-rain-none{background:rgba(255,255,255,.04);color:var(--muted);border-color:var(--border)}
+/* ── Race Control feed ── */
+.rc-feed{display:flex;flex-direction:column;gap:4px;max-height:220px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--surface2) transparent}
+.rc-item{display:flex;align-items:flex-start;gap:8px;padding:7px 10px;border-radius:8px;background:var(--bg)}
+.rc-icon{font-size:14px;flex-shrink:0;margin-top:1px}
+.rc-body{flex:1;min-width:0}
+.rc-msg{font-size:12px;line-height:1.45;color:var(--text)}
+.rc-meta{font-family:var(--font-m);font-size:10px;color:var(--faint);margin-top:2px}
+.rc-item.rc-sc{background:rgba(255,200,0,.06);border:1px solid rgba(255,200,0,.15)}
+.rc-item.rc-red{background:rgba(225,6,0,.06);border:1px solid rgba(225,6,0,.15)}
+.rc-item.rc-yellow{background:rgba(255,200,0,.04)}
+.rc-item.rc-drs{background:rgba(39,244,210,.04)}
+/* ── Yesterday's Games accordion ── */
+.yesterday-toggle{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:12px;cursor:pointer;user-select:none;transition:background .15s}
+.yesterday-toggle:hover{background:var(--surface2)}
+.yesterday-toggle-left{display:flex;align-items:center;gap:8px}
+.yesterday-label{font-family:var(--font-m);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
+.yesterday-count{font-size:10px;color:var(--faint);background:var(--surface2);padding:2px 7px;border-radius:10px;border:1px solid var(--border)}
+.yesterday-chevron{font-size:13px;color:var(--faint);transition:transform .25s}
+.yesterday-body{display:none;flex-direction:column;gap:10px;padding-top:2px}
+.yesterday-body.open{display:flex}
+
+/* ── Podcast player ── */
+.podcast-player{background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-top:4px}
+.podcast-header{display:flex;align-items:center;gap:12px;padding:12px 14px}
+.podcast-art{width:44px;height:44px;border-radius:10px;background:var(--surface2);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px;overflow:hidden}
+.podcast-art img{width:100%;height:100%;object-fit:cover;border-radius:10px}
+.podcast-info{flex:1;min-width:0}
+.podcast-show{font-size:10px;color:var(--faint);text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px}
+.podcast-episode{font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.podcast-meta{font-family:var(--font-m);font-size:10px;color:var(--faint);margin-top:2px}
+.podcast-controls{display:flex;align-items:center;gap:10px;padding:0 14px 12px}
+.podcast-play-btn{width:36px;height:36px;border-radius:50%;border:none;background:var(--f1-red);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:opacity .15s}
+.podcast-play-btn:hover{opacity:.85}
+.podcast-play-btn svg{width:16px;height:16px;fill:#fff}
+.podcast-play-btn.nhl-btn{background:var(--nhl-blue)}
+.podcast-play-btn.nfl-btn{background:var(--nfl-blue)}
+.podcast-progress-wrap{flex:1;display:flex;flex-direction:column;gap:5px}
+.podcast-progress{width:100%;height:3px;appearance:none;-webkit-appearance:none;background:var(--surface2);border-radius:2px;outline:none;cursor:pointer}
+.podcast-progress::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:#fff;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.4)}
+.podcast-time-row{display:flex;justify-content:space-between}
+.podcast-time{font-family:var(--font-m);font-size:10px;color:var(--faint)}
+.podcast-loading{padding:14px;text-align:center;font-family:var(--font-m);font-size:11px;color:var(--faint)}
+.podcast-error{padding:12px 14px;font-size:12px;color:var(--faint);text-align:center}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="header-wordmark">My Sports</div>
+    <div class="header-right">
+      <div class="sport-pills">
+        <span class="sport-pill f1-pill">F1</span>
+        <span class="sport-pill nhl-pill">NHL</span>
+        <span class="sport-pill nfl-pill">NFL</span>
+      </div>
+      <div class="last-updated" id="last-updated">Updating...</div>
+    </div>
+  </div>
+
+  <div class="tabs" id="tab-bar">
+    <div class="tab active" data-tab="f1"       onclick="switchTab('f1')">Formula 1</div>
+    <div class="tab"        data-tab="nhl"      onclick="switchTab('nhl')">NHL</div>
+    <div class="tab"        data-tab="nfl"      onclick="switchTab('nfl')">NFL</div>
+    <div class="tab"        data-tab="news"     onclick="switchTab('news')">News</div>
+    <div class="tab"        data-tab="settings" onclick="switchTab('settings')">⚙</div>
+  </div>
+
+  <div class="panel active" id="panel-f1">
+    <div class="loading" id="f1-loading"><div class="spinner"></div>Loading F1 data...</div>
+    <div id="f1-content" style="display:none;flex-direction:column;gap:16px"></div>
+  </div>
+  <div class="panel" id="panel-nhl">
+    <div class="loading" id="nhl-loading"><div class="spinner"></div>Loading NHL data...</div>
+    <div id="nhl-content" style="display:none;flex-direction:column;gap:16px"></div>
+  </div>
+  <div class="panel" id="panel-nfl">
+    <div class="loading" id="nfl-loading"><div class="spinner"></div>Loading NFL data...</div>
+    <div id="nfl-content" style="display:none;flex-direction:column;gap:16px"></div>
+  </div>
+  <div class="panel" id="panel-news">
+    <div class="loading" id="news-loading"><div class="spinner"></div>Loading stories...</div>
+    <div id="news-content" style="display:none;flex-direction:column;gap:16px"></div>
+  </div>
+  <div class="panel" id="panel-settings">
+    <div id="settings-content" style="display:flex;flex-direction:column;gap:16px"></div>
+  </div>
+</div>
+
+<script>
+// ── Helpers ──
+const TEAM_COLORS={Ferrari:'#E10600',McLaren:'#FF8000','Red Bull':'#3671C6',Mercedes:'#27F4D2',Aston:'#229971',Alpine:'#0093CC',Williams:'#64C4FF',Haas:'#B6BABD',Sauber:'#00CF46',RB:'#6692FF'};
+function teamColor(n=''){for(const[k,v]of Object.entries(TEAM_COLORS))if(n.includes(k))return v;return'#888'}
+function flag(c=''){const f={'Bahrain':'🇧🇭','Saudi Arabia':'🇸🇦','Australia':'🇦🇺','Japan':'🇯🇵','China':'🇨🇳','USA':'🇺🇸','United States':'🇺🇸','Miami':'🇺🇸','Emilia':'🇮🇹','Monaco':'🇲🇨','Canada':'🇨🇦','Spain':'🇪🇸','Austria':'🇦🇹','Britain':'🇬🇧','Hungary':'🇭🇺','Belgium':'🇧🇪','Netherlands':'🇳🇱','Italy':'🇮🇹','Singapore':'🇸🇬','Qatar':'🇶🇦','Mexico':'🇲🇽','Brazil':'🇧🇷','Las Vegas':'🇺🇸','Abu Dhabi':'🇦🇪'};for(const[k,v]of Object.entries(f))if(c.includes(k))return v+' ';return'🏁 '}
+function daysUntil(d){return Math.ceil((new Date(d)-Date.now())/86400000)}
+function timeAgo(d){const m=Math.floor((Date.now()-new Date(d))/60000);if(m<60)return m+'m ago';if(m<1440)return Math.floor(m/60)+'h ago';return Math.floor(m/1440)+'d ago'}
+// ── Settings / sport registry ──
+// To add a new sport later, just add an entry here.
+const ALL_SPORTS = [
+  { id:'f1',  label:'Formula 1', desc:'Races, standings & results', emoji:'🏎️', accentVar:'--f1-red' },
+  { id:'nhl', label:'NHL',       desc:'Scores, standings & stats',  emoji:'🏒', accentVar:'--nhl-blue' },
+  { id:'nfl', label:'NFL',       desc:'Scores & standings',         emoji:'🏈', accentVar:'--nfl-blue' },
+];
+
+function loadSportPrefs(){
+  try{
+    const saved=localStorage.getItem('sportPrefs');
+    if(saved){
+      const parsed=JSON.parse(saved);
+      // Ensure any new sports default to enabled
+      ALL_SPORTS.forEach(s=>{ if(!(s.id in parsed)) parsed[s.id]=true; });
+      return parsed;
+    }
+  } catch(e){}
+  // Default: all on
+  return Object.fromEntries(ALL_SPORTS.map(s=>[s.id,true]));
+}
+
+function saveSportPrefs(prefs){ localStorage.setItem('sportPrefs',JSON.stringify(prefs)); }
+
+let sportPrefs = loadSportPrefs();
+
+function isSportOn(id){ return sportPrefs[id]!==false; }
+
+function applyTabVisibility(){
+  ALL_SPORTS.forEach(s=>{
+    const tab=document.querySelector(`.tab[data-tab="${s.id}"]`);
+    if(tab) tab.style.display=isSportOn(s.id)?'':'none';
+  });
+  // Update header pills
+  const pillContainer=document.querySelector('.sport-pills');
+  if(pillContainer){
+    pillContainer.innerHTML=ALL_SPORTS.filter(s=>isSportOn(s.id))
+      .map(s=>`<span class="sport-pill" style="background:var(${s.accentVar});color:#fff">${s.label==='Formula 1'?'F1':s.label}</span>`)
+      .join('');
+  }
+}
+
+function switchTab(n){
+  // If trying to open a disabled sport tab, bounce to first enabled sport
+  if(n!=='news'&&n!=='settings'&&!isSportOn(n)){
+    const first=ALL_SPORTS.find(s=>isSportOn(s.id));
+    n=first?first.id:'news';
+  }
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===n));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id==='panel-'+n));
+  if(n==='settings') renderSettings();
+}
+
+function refreshIcon(){return`<svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>`}
+
+function renderSettings(){
+  const el=document.getElementById('settings-content');
+  let html='';
+
+  // Sport toggles
+  html+=`<div style="display:flex;flex-direction:column;gap:8px">`;
+  html+=`<div class="settings-note" style="text-align:left;padding:0 4px;margin-bottom:4px;font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--faint)">Active Sports</div>`;
+  ALL_SPORTS.forEach(s=>{
+    const on=isSportOn(s.id);
+    html+=`<div class="sport-toggle-row">
+      <div class="sport-toggle-left">
+        <div class="sport-toggle-icon" style="background:${on?'var('+s.accentVar+')':'var(--surface2)'}; transition:background .25s">${s.emoji}</div>
+        <div>
+          <div class="sport-toggle-name">${s.label}</div>
+          <div class="sport-toggle-desc">${s.desc}</div>
+        </div>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" ${on?'checked':''} onchange="toggleSport('${s.id}',this.checked)">
+        <div class="toggle-track"></div>
+        <div class="toggle-thumb"></div>
+      </label>
+    </div>`;
+  });
+  html+=`</div>`;
+
+  // App info
+  html+=`<div class="settings-note" style="text-align:left;padding:0 4px;margin-bottom:-4px;font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--faint)">About</div>`;
+  html+=`<div class="settings-info-card">
+    <div class="settings-info-row"><div class="settings-info-label">Data sources</div><div class="settings-info-val">Jolpica · ESPN</div></div>
+    <div class="settings-info-row"><div class="settings-info-label">Last refreshed</div><div class="settings-info-val" id="settings-last-updated">${document.getElementById('last-updated').textContent}</div></div>
+  </div>`;
+
+  html+=`<button class="refresh-btn" onclick="refreshAll()">${refreshIcon()} Refresh all data</button>`;
+  html+=`<div class="settings-note">Your preferences are saved on this device.<br>Toggle sports on or off — their tabs appear and disappear instantly.</div>`;
+
+  el.innerHTML=html;
+}
+
+function toggleSport(id, enabled){
+  sportPrefs[id]=enabled;
+  saveSportPrefs(sportPrefs);
+  applyTabVisibility();
+  // If we just disabled the current tab, move to first available
+  const activeTab=document.querySelector('.tab.active');
+  if(activeTab&&activeTab.dataset.tab===id&&!enabled){
+    const first=ALL_SPORTS.find(s=>isSportOn(s.id));
+    switchTab(first?first.id:'news');
+  }
+  // Re-render settings to update icon colours
+  renderSettings();
+  // Re-render news filters to reflect active sports
+  const newsContent=document.getElementById('news-content');
+  if(newsContent&&newsContent.innerHTML) loadNews();
+}
+
+function refreshAll(){
+  if(isSportOn('f1'))  reloadF1();
+  if(isSportOn('nhl')) reloadNHL();
+  if(isSportOn('nfl')) reloadNFL();
+  reloadNews();
+  switchTab(ALL_SPORTS.find(s=>isSportOn(s.id))?.id||'news');
+}
+
+// ── OpenF1 helpers ──
+const OF1 = 'https://api.openf1.org/v1';
+
+async function fetchOpenF1Weather(meetingKey){
+  try{
+    const r=await fetch(`${OF1}/weather?meeting_key=${meetingKey}`);
+    if(!r.ok) return null;
+    const d=await r.json();
+    if(!d.length) return null;
+    // Return the most recent reading
+    return d[d.length-1];
+  } catch(e){ return null; }
+}
+
+async function fetchOpenF1RaceControl(meetingKey){
+  try{
+    const r=await fetch(`${OF1}/race_control?meeting_key=${meetingKey}`);
+    if(!r.ok) return [];
+    const d=await r.json();
+    if(!d.length) return [];
+    // Return last 20, most-recent first, filtering out trivial DRS enable/disable spam
+    return d
+      .filter(m=> !(m.category==='Drs' && (m.message||'').match(/^DRS (enabled|disabled)$/i)))
+      .slice(-20)
+      .reverse();
+  } catch(e){ return []; }
+}
+
+// Fetch OpenF1 meeting_key by matching the Jolpica round date
+async function fetchOpenF1MeetingKey(raceDate){
+  try{
+    const year=raceDate.slice(0,4);
+    const r=await fetch(`${OF1}/meetings?year=${year}`);
+    if(!r.ok) return 'latest';
+    const meetings=await r.json();
+    if(!meetings.length) return 'latest';
+    // Match by date proximity (within 7 days)
+    const raceTs=new Date(raceDate).getTime();
+    let best=null, bestDiff=Infinity;
+    meetings.forEach(m=>{
+      const mTs=new Date(m.date_start).getTime();
+      const diff=Math.abs(raceTs-mTs);
+      if(diff<bestDiff){ bestDiff=diff; best=m; }
+    });
+    return (best && bestDiff < 8*86400000) ? best.meeting_key : 'latest';
+  } catch(e){ return 'latest'; }
+}
+
+function rcIcon(msg){
+  const cat=(msg.category||'').toLowerCase();
+  const flag=(msg.flag||'').toUpperCase();
+  const text=(msg.message||'').toUpperCase();
+  if(flag==='RED'||text.includes('RED FLAG')) return {icon:'🔴',cls:'rc-red'};
+  if(flag==='CHEQUERED') return {icon:'🏁',cls:''};
+  if(cat==='safetycar'||text.includes('SAFETY CAR')||text.includes('VSC')) return {icon:'🚗',cls:'rc-sc'};
+  if(flag==='YELLOW'||flag==='DOUBLE YELLOW') return {icon:'🟡',cls:'rc-yellow'};
+  if(flag==='GREEN') return {icon:'🟢',cls:''};
+  if(flag==='BLACK AND WHITE') return {icon:'⚫',cls:''};
+  if(cat==='drs') return {icon:'⬆️',cls:'rc-drs'};
+  if(cat==='flag') return {icon:'🏴',cls:''};
+  if(text.includes('PENALTY')||text.includes('INVESTIGATION')) return {icon:'⚖️',cls:''};
+  if(text.includes('PIT')||text.includes('DRIVE THROUGH')) return {icon:'🔧',cls:''};
+  return {icon:'📢',cls:''};
+}
+
+function renderWeatherCard(w){
+  if(!w) return '';
+  const rain=w.rainfall>0;
+  const rainHtml=rain
+    ?`<span class="weather-rain">🌧 Rainfall ${w.rainfall}mm</span>`
+    :`<span class="weather-rain weather-rain-none">☀️ No rainfall</span>`;
+  const windDir=w.wind_direction!=null?`${w.wind_direction}°`:'—';
+  const windSpeed=w.wind_speed!=null?`${w.wind_speed} m/s`:'—';
+  return `<div class="openf1-section">
+    <div class="openf1-row-label">Track Conditions · OpenF1</div>
+    <div class="weather-grid">
+      <div class="weather-cell"><div class="weather-val">${w.air_temperature??'—'}°</div><div class="weather-label">Air Temp</div></div>
+      <div class="weather-cell"><div class="weather-val">${w.track_temperature??'—'}°</div><div class="weather-label">Track Temp</div></div>
+      <div class="weather-cell"><div class="weather-val">${w.humidity??'—'}%</div><div class="weather-label">Humidity</div></div>
+      <div class="weather-cell"><div class="weather-val" style="font-size:15px;padding-top:4px">${windSpeed}</div><div class="weather-label">Wind ${windDir}</div></div>
+    </div>
+    ${rainHtml}
+  </div>`;
+}
+
+function renderRaceControlCard(msgs){
+  if(!msgs.length) return '';
+  let rows='';
+  msgs.forEach(m=>{
+    const {icon,cls}=rcIcon(m);
+    const time=m.date?new Date(m.date).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}):'';
+    const driverBit=m.driver_number?` · #${m.driver_number}`:'';
+    const lap=m.lap_number?` · Lap ${m.lap_number}`:'';
+    rows+=`<div class="rc-item ${cls}">
+      <div class="rc-icon">${icon}</div>
+      <div class="rc-body">
+        <div class="rc-msg">${m.message||'—'}</div>
+        <div class="rc-meta">${time}${driverBit}${lap}</div>
+      </div>
+    </div>`;
+  });
+  return `<div class="openf1-section">
+    <div class="openf1-row-label">Race Control · OpenF1</div>
+    <div class="rc-feed">${rows}</div>
+  </div>`;
+}
+
+// ── F1 ──
+const f1DrawerCache={};
+
+async function toggleSessionDrawer(rowEl, raceRound, sessionKey, sessionLabel){
+  const drawerId='drawer-'+raceRound+'-'+sessionKey;
+  let drawer=document.getElementById(drawerId);
+  const chevron=rowEl.querySelector('.chevron');
+  if(drawer){
+    const isOpen=drawer.classList.contains('open');
+    drawer.classList.toggle('open',!isOpen);
+    chevron.style.transform=isOpen?'':'rotate(180deg)';
+    return;
+  }
+  // create drawer
+  drawer=document.createElement('div');
+  drawer.className='session-drawer open';
+  drawer.id=drawerId;
+  drawer.innerHTML=`<div class="drawer-inner"><div class="drawer-loading">Loading results...</div></div>`;
+  rowEl.parentNode.insertBefore(drawer,rowEl.nextSibling);
+  chevron.style.transform='rotate(180deg)';
+
+  if(f1DrawerCache[drawerId]){
+    drawer.querySelector('.drawer-inner').innerHTML=f1DrawerCache[drawerId];
+    return;
+  }
+
+  try{
+    let url,data,results=[];
+    if(sessionKey==='Race'){
+      url=`https://api.jolpi.ca/ergast/f1/current/${raceRound}/results.json`;
+      const r=await fetch(url); data=await r.json();
+      results=(data?.MRData?.RaceTable?.Races?.[0]?.Results||[]).slice(0,10);
+      results=results.map(r=>({pos:r.position,name:`${r.Driver?.givenName?.[0]}. ${r.Driver?.familyName}`,team:r.Constructor?.name,time:r.position==='1'?(r.Time?.time||r.status):(r.Time?.time?'+'+r.Time.time:r.status)}));
+    } else if(sessionKey==='Qualifying'){
+      url=`https://api.jolpi.ca/ergast/f1/current/${raceRound}/qualifying.json`;
+      const r=await fetch(url); data=await r.json();
+      const qs=(data?.MRData?.RaceTable?.Races?.[0]?.QualifyingResults||[]).slice(0,10);
+      results=qs.map(r=>({pos:r.position,name:`${r.Driver?.givenName?.[0]}. ${r.Driver?.familyName}`,team:r.Constructor?.name,time:r.Q3||r.Q2||r.Q1||'—'}));
+    } else if(sessionKey==='Sprint'){
+      url=`https://api.jolpi.ca/ergast/f1/current/${raceRound}/sprint.json`;
+      const r=await fetch(url); data=await r.json();
+      const sr=(data?.MRData?.RaceTable?.Races?.[0]?.SprintResults||[]).slice(0,10);
+      results=sr.map(r=>({pos:r.position,name:`${r.Driver?.givenName?.[0]}. ${r.Driver?.familyName}`,team:r.Constructor?.name,time:r.position==='1'?(r.Time?.time||r.status):(r.Time?.time?'+'+r.Time.time:r.status)}));
+    } else {
+      drawer.querySelector('.drawer-inner').innerHTML=`<div class="drawer-loading" style="color:var(--muted)">Practice results not available in this API.</div>`;
+      return;
+    }
+
+    if(!results.length){
+      drawer.querySelector('.drawer-inner').innerHTML=`<div class="drawer-loading" style="color:var(--muted)">No results yet — check back after the session.</div>`;
+      return;
+    }
+
+    let html='';
+    results.forEach((r,i)=>{
+      const col=teamColor(r.team||'');
+      html+=`<div class="result-row">
+        <div class="result-pos ${i===0?'gold':''}">${r.pos}</div>
+        <div class="result-bar" style="background:${col}"></div>
+        <div style="flex:1"><div class="result-name">${r.name}</div><div class="result-team">${r.team||''}</div></div>
+        <div class="result-time">${r.time}</div>
+      </div>`;
+    });
+    f1DrawerCache[drawerId]=html;
+    drawer.querySelector('.drawer-inner').innerHTML=html;
+  } catch(e){
+    drawer.querySelector('.drawer-inner').innerHTML=`<div class="drawer-loading" style="color:#ff6b68">Couldn't load results.</div>`;
+  }
+}
+
+async function loadF1(){
+  const loading=document.getElementById('f1-loading');
+  const content=document.getElementById('f1-content');
+  try{
+    const now=new Date();
+    const [resSched,resLast,resDrv]=await Promise.all([
+      fetch('https://api.jolpi.ca/ergast/f1/current.json'),
+      fetch('https://api.jolpi.ca/ergast/f1/current/last/results.json'),
+      fetch('https://api.jolpi.ca/ergast/f1/current/driverStandings.json')
+    ]);
+    const [dataSched,dataLast,dataDrv]=await Promise.all([resSched.json(),resLast.json(),resDrv.json()]);
+    const allRaces=dataSched?.MRData?.RaceTable?.Races||[];
+    const lastRace=dataLast?.MRData?.RaceTable?.Races?.[0];
+    const drivers=dataDrv?.MRData?.StandingsTable?.StandingsLists?.[0]?.DriverStandings?.slice(0,8)||[];
+
+    function sessionDT(s){if(!s?.date)return null;return new Date(s.date+'T'+(s.time||'00:00:00'))}
+    function isLive(s){const t=sessionDT(s);if(!t)return false;const m=(now-t)/60000;return m>=0&&m<120}
+    function inWindow(race){
+      const ss=[race.FirstPractice,race.SecondPractice,race.ThirdPractice,race.Qualifying,race.Sprint,race.SprintQualifying,{date:race.date,time:race.time}].filter(Boolean);
+      return ss.some(s=>{const t=sessionDT(s);if(!t)return false;const h=(t-now)/3600000;return h>-3&&h<96});
+    }
+    function isPast(s){const t=sessionDT(s);return t&&t<now&&!isLive(s)}
+
+    const currentRace=allRaces.find(inWindow);
+    // Next race = first race that hasn't started its weekend yet
+    const nextRace=allRaces.find(r=>{
+      if(currentRace&&r.round===currentRace.round)return false;
+      const fp=r.FirstPractice||{date:r.date,time:r.time};
+      const t=sessionDT(fp);
+      return t&&t>now;
+    });
+
+    let html='';
+
+    // ── Current race weekend ──
+    if(currentRace){
+      const sessionDefs=[
+        {key:'FirstPractice',label:'Practice 1',drawerKey:'FP1'},
+        {key:'SecondPractice',label:'Practice 2',drawerKey:'FP2'},
+        {key:'ThirdPractice',label:'Practice 3',drawerKey:'FP3'},
+        {key:'SprintQualifying',label:'Sprint Shootout',drawerKey:'SQ'},
+        {key:'Sprint',label:'Sprint Race',drawerKey:'Sprint'},
+        {key:'Qualifying',label:'Qualifying',drawerKey:'Qualifying'},
+        {key:null,label:'Race',drawerKey:'Race',date:currentRace.date,time:currentRace.time}
+      ].filter(s=>s.key?!!currentRace[s.key]:true)
+       .map(s=>{
+         const raw=s.key?currentRace[s.key]:{date:s.date,time:s.time};
+         return{...s,raw,dt:sessionDT(raw),live:isLive(raw),past:isPast(raw)};
+       });
+
+      const anyLive=sessionDefs.some(s=>s.live);
+      const cardClass=anyLive?'card-live':'card';
+
+      html+=`<div class="section-label">Race Weekend</div>
+      <div class="${cardClass}"><div class="card-inner">
+        <div class="race-meta">
+          <div>
+            <div class="race-title">${flag(currentRace.Circuit?.Location?.country)}${currentRace.raceName}</div>
+            <div class="race-subtitle">${currentRace.Circuit?.circuitName}</div>
+          </div>
+          ${anyLive?'<span class="badge badge-live">Live Now</span>':'<span class="badge badge-weekend">This Weekend</span>'}
+        </div>
+        ${anyLive?`<div class="session-info"><div class="session-name">🔴 ${sessionDefs.find(s=>s.live)?.label} in progress</div></div>`:''}
+        <div class="weekend-schedule" id="weekend-schedule">`;
+
+      sessionDefs.forEach(s=>{
+        if(!s.dt)return;
+        const timeStr=s.dt.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})+' · '+s.dt.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZoneName:'short'});
+        const hasResults=s.past&&(s.drawerKey==='Race'||s.drawerKey==='Qualifying'||s.drawerKey==='Sprint');
+        const rowClass=`session-row${s.live?' live-row':''}${hasResults?' has-results':''}`;
+        const rightCol=s.live
+          ?`<span class="session-row-live-badge">● LIVE</span>`
+          :`<span class="session-row-time" style="${s.past?'opacity:.4':''}">${timeStr}</span>`;
+        const chevron=hasResults?`<span class="chevron">›</span>`:'';
+        const onclick=hasResults?`onclick="toggleSessionDrawer(this.closest('.session-row'),'${currentRace.round}','${s.drawerKey}','${s.label}')"`:s.live?`onclick="toggleSessionDrawer(this.closest('.session-row'),'${currentRace.round}','${s.drawerKey}','${s.label}')"` :'';
+        html+=`<div class="${rowClass}" ${onclick}>
+          <div class="session-row-left">
+            <span class="session-row-name" style="${s.past&&!s.live?'opacity:.5':''}">${s.label}</span>
+            ${hasResults?'<span style="font-size:9px;color:var(--faint);margin-left:2px">RESULTS</span>':''}
+          </div>
+          <div class="session-row-right">${rightCol}${chevron}</div>
+        </div>`;
+      });
+
+      // ── OpenF1: weather + race control (only during a live/active weekend) ──
+      // Fetch meeting key matched to this race, then weather & race control in parallel
+      const of1MeetingKey = await fetchOpenF1MeetingKey(currentRace.date);
+      const [of1Weather, of1RC] = await Promise.all([
+        fetchOpenF1Weather(of1MeetingKey),
+        fetchOpenF1RaceControl(of1MeetingKey),
+      ]);
+      const weatherHtml = renderWeatherCard(of1Weather);
+      const rcHtml = renderRaceControlCard(of1RC);
+
+      html+=`</div>${weatherHtml}${rcHtml}</div></div>`;
+    }
+
+    // ── Next race countdown (moved here, right after weekend card) ──
+    if(nextRace){
+      const days=daysUntil(nextRace.date);
+      html+=`<div class="section-label">Next Race</div>
+      <div class="card"><div class="countdown-card">
+        <div class="countdown-row">
+          <div>
+            <div class="countdown-title">${flag(nextRace.Circuit?.Location?.country)}${nextRace.raceName}</div>
+            <div class="countdown-sub">${nextRace.Circuit?.circuitName} · ${new Date(nextRace.date).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</div>
+          </div>
+          <div style="text-align:right">
+            <div class="countdown-num">${days}</div>
+            <div class="countdown-unit">DAYS AWAY</div>
+          </div>
+        </div>
+      </div></div>`;
+    }
+
+    // ── Last race results (if not same as current) ──
+    if(lastRace&&(!currentRace||currentRace.round!==lastRace.round)){
+      const results=lastRace.Results?.slice(0,5)||[];
+      html+=`<div class="section-label">Last Race</div>
+      <div class="card"><div class="card-inner">
+        <div class="race-meta">
+          <div>
+            <div class="race-title">${flag(lastRace.Circuit?.Location?.country)}${lastRace.raceName}</div>
+            <div class="race-subtitle">${lastRace.Circuit?.circuitName} · Round ${lastRace.round}</div>
+          </div>
+          <span class="badge badge-final">Final</span>
+        </div>
+        <div class="podium">`;
+      results.forEach((r,i)=>{
+        const col=teamColor(r.Constructor?.name||'');
+        const time=i===0?(r.Time?.time||r.status):(r.Time?.time?'+'+r.Time.time:r.status);
+        html+=`<div class="podium-row ${i===0?'p1':''}">
+          <div class="pos-num ${i===0?'gold':''}">${r.position}</div>
+          <div class="team-bar" style="background:${col}"></div>
+          <div class="driver-col">
+            <div class="driver-name">${r.Driver?.givenName?.[0]}. ${r.Driver?.familyName}</div>
+            <div class="driver-team">${r.Constructor?.name||''}</div>
+          </div>
+          <div class="driver-time">${time}</div>
+        </div>`;
+      });
+      html+=`</div></div></div></div>`;
+    }
+
+    // ── Driver standings ──
+    if(drivers.length){
+      const leader=parseFloat(drivers[0]?.points||0);
+      html+=`<div class="section-label">Driver Standings</div><div class="card"><div class="standings-table">`;
+      drivers.forEach((d,i)=>{
+        const pts=parseFloat(d.points);
+        html+=`<div class="standings-row ${i<3?'highlight':''}">
+          <div class="s-pos">${d.position}</div>
+          <div class="s-name">${d.Driver?.givenName?.[0]}. ${d.Driver?.familyName}</div>
+          <div class="s-pts">${Math.round(pts)}<span class="s-pts-label">pts</span></div>
+          <div class="s-gap">${i===0?'—':'−'+(leader-pts)}</div>
+        </div>`;
+      });
+      html+=`</div></div>`;
+    }
+
+    html+=`<button class="refresh-btn" onclick="reloadF1()">${refreshIcon()} Refresh F1 data</button>`;
+
+    // Podcast player
+    html+=`<div class="section-label">Podcast</div><div class="podcast-player" id="podcast-f1"><div class="podcast-loading">Loading latest episode…</div></div>`;
+
+    content.innerHTML=html;
+    content.style.display='flex';
+    loading.style.display='none';
+    document.getElementById('last-updated').textContent='Updated '+new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+    loadPodcast('f1');
+  } catch(e){
+    loading.style.display='none';
+    content.innerHTML=`<div class="error-msg">Couldn't load F1 data. Check your connection and try refreshing.</div><button class="refresh-btn" onclick="reloadF1()">${refreshIcon()} Try again</button>`;
+    content.style.display='flex';
+  }
+}
+function reloadF1(){document.getElementById('f1-loading').style.display='flex';document.getElementById('f1-content').style.display='none';loadF1()}
+
+// ── NHL ──
+const NHL_COLORS={BOS:'#FFB81C',BUF:'#003087',DET:'#CE1126',FLA:'#C8102E',MTL:'#AF1E2D',OTT:'#E4173E',TBL:'#002868',TOR:'#003E7E',CAR:'#CC0000',CBJ:'#002654',NJD:'#CE1126',NYI:'#003087',NYR:'#0038A8',PHI:'#F74902',PIT:'#FCB514',WSH:'#041E42',CHI:'#CF0A2C',COL:'#6F263D',DAL:'#006847',MIN:'#154734',NSH:'#FFB81C',STL:'#002F87',WPG:'#041E42',ANA:'#FC4C02',CGY:'#C8102E',EDM:'#FF4C00',LAK:'#A2AAAD',SJS:'#006D75',SEA:'#001628',VAN:'#00205B',VGK:'#B4975A',UTA:'#69B3E7'};
+
+// Pull shots on goal and power play from the per-game summary endpoint.
+// The scoreboard endpoint only has scores; detail lives in the summary.
+async function fetchNHLGameStats(gameId){
+  try{
+    const r=await fetch(`https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/summary?event=${gameId}`);
+    const d=await r.json();
+    // Shots on goal live in boxscore.teams[].statistics
+    const teams=d?.boxscore?.teams||[];
+    let homeSOG='–', awaySOG='–', homePP=false, awayPP=false, ppTeamAbbr='';
+    teams.forEach(t=>{
+      const isHome=t.homeAway==='home';
+      // ESPN uses different names depending on sport/state — try several
+      const shotStat=t.statistics?.find(s=>
+        s.name==='shotsOnGoal'||
+        s.abbreviation==='SOG'||
+        s.name==='shots'||
+        s.abbreviation==='SOG'||
+        s.label==='Shots on Goal'||
+        s.label==='Shots'
+      );
+      const val=shotStat?.displayValue??shotStat?.value??null;
+      if(isHome){ if(val!==null) homeSOG=String(val); }
+      else       { if(val!==null) awaySOG=String(val); }
+    });
+    // Power play lives in situation object at the top level
+    const sit=d?.situation||d?.boxscore?.situation||{};
+    homePP=sit?.homeTeam?.powerPlay||false;
+    awayPP=sit?.awayTeam?.powerPlay||false;
+    // penalty clock
+    const ppClock=sit?.penaltyClockDisplayValue||'';
+    // which team abbr
+    if(homePP) ppTeamAbbr=teams.find(t=>t.homeAway==='home')?.team?.abbreviation||'';
+    if(awayPP) ppTeamAbbr=teams.find(t=>t.homeAway==='away')?.team?.abbreviation||'';
+    return{homeSOG,awaySOG,homePP,awayPP,ppTeamAbbr,ppClock};
+  } catch(e){
+    return{homeSOG:'–',awaySOG:'–',homePP:false,awayPP:false,ppTeamAbbr:'',ppClock:''};
+  }
+}
+
+async function loadNHL(){
+  const loading=document.getElementById('nhl-loading');
+  const content=document.getElementById('nhl-content');
+  try{
+    const [scoreRes,standRes]=await Promise.all([
+      fetch('https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard'),
+      fetch('https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/standings')
+    ]);
+    const [scoreData,standData]=await Promise.all([scoreRes.json(),standRes.json()]);
+    const games=scoreData?.events||[];
+    const standGroups=standData?.children||[];
+
+    // Fetch per-game stats for active/finished games in parallel
+    const gameStatsList=await Promise.all(
+      games.map(g=>{
+        const state=g.competitions?.[0]?.status?.type?.state;
+        if(state==='in'||state==='post') return fetchNHLGameStats(g.id);
+        return Promise.resolve({homeSOG:'–',awaySOG:'–',homePP:false,awayPP:false,ppTeamAbbr:'',ppClock:''});
+      })
+    );
+
+    let html='';
+
+    if(games.length){
+      // Determine smart label: check the date of the first game vs today/tomorrow
+      const firstGameDate=scoreData?.events?.[0]?.competitions?.[0]?.date;
+      let gamesLabel="Today's Games";
+      if(firstGameDate){
+        const gameDay=new Date(firstGameDate);
+        const now2=new Date();
+        const todayStr=now2.toDateString();
+        const tomorrowStr=new Date(now2.getFullYear(),now2.getMonth(),now2.getDate()+1).toDateString();
+        if(gameDay.toDateString()===todayStr) gamesLabel="Today's Games";
+        else if(gameDay.toDateString()===tomorrowStr) gamesLabel="Tomorrow's Games";
+        else gamesLabel=`Games · ${gameDay.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})}`;
+      }
+      html+=`<div class="section-label">${gamesLabel}</div>`;
+      games.forEach((g,gi)=>{
+        const comp=g.competitions?.[0];
+        const home=comp?.competitors?.find(c=>c.homeAway==='home');
+        const away=comp?.competitors?.find(c=>c.homeAway==='away');
+        const status=comp?.status?.type;
+        const homeAbbr=home?.team?.abbreviation||'';
+        const awayAbbr=away?.team?.abbreviation||'';
+        const homeScore=home?.score??'–';
+        const awayScore=away?.score??'–';
+        const homeColor=NHL_COLORS[homeAbbr]||'#333';
+        const awayColor=NHL_COLORS[awayAbbr]||'#333';
+        const{homeSOG,awaySOG,homePP,awayPP,ppTeamAbbr,ppClock}=gameStatsList[gi];
+
+        let badge,detail='';
+        if(status?.state==='in'){
+          badge=`<span class="badge badge-live">Live</span>`;
+          const period=comp?.status?.period;
+          const clock=comp?.status?.displayClock||'';
+          detail=`${period?'Period '+period:''}${clock?' · '+clock:''}`;
+        } else if(status?.state==='post'){
+          badge=`<span class="badge badge-final">Final</span>`;
+          detail=status?.shortDetail||'Final';
+        } else {
+          const t=comp?.date?new Date(comp.date).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}):'TBD';
+          badge=`<span class="badge badge-upcoming">${t}</span>`;
+        }
+
+        const showStats=status?.state==='in'||status?.state==='post';
+        const ppActive=(homePP||awayPP)&&status?.state==='in';
+        const ppHtml=ppActive
+          ?`<span class="pp-badge">⚡ ${ppTeamAbbr} Power Play${ppClock?' · '+ppClock:''}</span>`:'';
+
+        html+=`<div class="card"><div class="card-inner">
+          <div class="game-status-row" style="gap:6px;flex-wrap:wrap">${badge}${ppHtml}</div>
+          <div class="matchup">
+            <div class="team-block">
+              <div class="team-logo" style="background:${awayColor}">${awayAbbr}</div>
+              <div class="team-name">${away?.team?.shortDisplayName||awayAbbr}</div>
+            </div>
+            <div class="score-area">
+              <div class="score-num">${awayScore}</div>
+              <div class="score-sep">–</div>
+              <div class="score-num">${homeScore}</div>
+            </div>
+            <div class="team-block">
+              <div class="team-logo" style="background:${homeColor}">${homeAbbr}</div>
+              <div class="team-name">${home?.team?.shortDisplayName||homeAbbr}</div>
+            </div>
+          </div>
+          ${detail?`<div class="game-detail">${detail}</div>`:''}
+          ${showStats?`<div class="game-stats">
+            <div class="stat-col"><div class="stat-val">${awaySOG}</div><div class="stat-label">${awayAbbr} SOG</div></div>
+            <div class="stat-col" style="border-left:1px solid var(--border);border-right:1px solid var(--border);padding:0 12px">
+              <div class="stat-val" style="font-size:11px;color:var(--faint)">Shots</div>
+              <div class="stat-label">on goal</div>
+            </div>
+            <div class="stat-col"><div class="stat-val">${homeSOG}</div><div class="stat-label">${homeAbbr} SOG</div></div>
+          </div>`:''}
+        </div></div>`;
+      });
+    } else {
+      html+=`<div class="card"><div class="card-inner" style="text-align:center;color:var(--muted);font-size:14px;padding:20px 16px">No games scheduled today</div></div>`;
+    }
+
+    const allTeams=standGroups.flatMap(g=>g.standings?.entries||[])
+      .sort((a,b)=>(b.stats?.find(s=>s.name==='points')?.value||0)-(a.stats?.find(s=>s.name==='points')?.value||0))
+      .slice(0,12);
+    if(allTeams.length){
+      const leaderPts=allTeams[0]?.stats?.find(s=>s.name==='points')?.value||0;
+      html+=`<div class="section-label">League Standings</div><div class="card"><div class="standings-table">`;
+      allTeams.forEach((t,i)=>{
+        const name=t.team?.shortDisplayName||t.team?.displayName||'—';
+        const pts=t.stats?.find(s=>s.name==='points')?.value||0;
+        html+=`<div class="standings-row ${i<3?'highlight':''}">
+          <div class="s-pos">${i+1}</div>
+          <div class="s-name">${name}</div>
+          <div class="s-pts">${pts}<span class="s-pts-label">pts</span></div>
+          <div class="s-gap">${i===0?'—':'−'+(leaderPts-pts)}</div>
+        </div>`;
+      });
+      html+=`</div></div>`;
+    }
+
+    // Previous games (last 7 days)
+    const prevDays=await loadPreviousNHL();
+    const prevToggle=renderPreviousNHLToggle('nhl-previous',prevDays,renderNHLGameCard);
+    if(prevToggle) html+=prevToggle;
+
+    html+=`<button class="refresh-btn" onclick="reloadNHL()">${refreshIcon()} Refresh NHL data</button>`;
+
+    // Podcast player
+    html+=`<div class="section-label">Podcast</div><div class="podcast-player" id="podcast-nhl"><div class="podcast-loading">Loading latest episode…</div></div>`;
+
+    content.innerHTML=html;
+    content.style.display='flex';
+    loading.style.display='none';
+    loadPodcast('nhl');
+  } catch(e){
+    loading.style.display='none';
+    content.innerHTML=`<div class="error-msg">Couldn't load NHL data.</div><button class="refresh-btn" onclick="reloadNHL()">${refreshIcon()} Try again</button>`;
+    content.style.display='flex';
+  }
+}
+function reloadNHL(){document.getElementById('nhl-loading').style.display='flex';document.getElementById('nhl-content').style.display='none';loadNHL()}
+
+// ── NFL ──
+const NFL_COLORS={ARI:'#97233F',ATL:'#A71930',BAL:'#241773',BUF:'#00338D',CAR:'#0085CA',CHI:'#0B162A',CIN:'#FB4F14',CLE:'#311D00',DAL:'#003594',DEN:'#FB4F14',DET:'#0076B6',GB:'#203731',HOU:'#03202F',IND:'#002C5F',JAX:'#006778',KC:'#E31837',LAC:'#0080C6',LAR:'#003594',LV:'#A5ACAF',MIA:'#008E97',MIN:'#4F2683',NE:'#002244',NO:'#D3BC8D',NYG:'#0B2265',NYJ:'#125740',PHI:'#004C54',PIT:'#FFB612',SEA:'#002244',SF:'#AA0000',TB:'#D50A0A',TEN:'#4B92DB',WSH:'#5A1414'};
+
+async function loadNFL(){
+  const loading=document.getElementById('nfl-loading');
+  const content=document.getElementById('nfl-content');
+  try{
+    const [scoreRes,standRes]=await Promise.all([
+      fetch('https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard'),
+      fetch('https://site.api.espn.com/apis/site/v2/sports/football/nfl/standings')
+    ]);
+    const [scoreData,standData]=await Promise.all([scoreRes.json(),standRes.json()]);
+    const games=scoreData?.events||[];
+    const standGroups=standData?.children||[];
+
+    let html='';
+
+    // Season info
+    const season=scoreData?.season;
+    const week=scoreData?.week;
+    if(season||week){
+      const label=season?.type===3?`Playoffs`:(week?`Week ${week.number}`:'');
+      if(label) html+=`<div class="section-label">${season?.year||''} Season · ${label}</div>`;
+    }
+
+    if(games.length){
+      if(!season&&!week) html+=`<div class="section-label">Games</div>`;
+      games.forEach(g=>{
+        const comp=g.competitions?.[0];
+        const home=comp?.competitors?.find(c=>c.homeAway==='home');
+        const away=comp?.competitors?.find(c=>c.homeAway==='away');
+        const status=comp?.status?.type;
+        const homeAbbr=home?.team?.abbreviation||'';
+        const awayAbbr=away?.team?.abbreviation||'';
+        const homeScore=home?.score??'–';
+        const awayScore=away?.score??'–';
+        const homeColor=NFL_COLORS[homeAbbr]||'#333';
+        const awayColor=NFL_COLORS[awayAbbr]||'#333';
+
+        let badge,detail='';
+        if(status?.state==='in'){
+          badge=`<span class="badge badge-live">Live</span>`;
+          detail=comp?.status?.shortDetail||'In progress';
+        } else if(status?.state==='post'){
+          badge=`<span class="badge badge-final">Final</span>`;
+          detail=status?.shortDetail||'Final';
+        } else {
+          const t=comp?.date?new Date(comp.date).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})+' · '+new Date(comp.date).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}):'TBD';
+          badge=`<span class="badge badge-upcoming" style="font-size:9px">${t}</span>`;
+        }
+
+        html+=`<div class="card"><div class="card-inner">
+          <div class="game-status-row">${badge}</div>
+          <div class="matchup">
+            <div class="team-block">
+              <div class="team-logo" style="background:${awayColor}">${awayAbbr}</div>
+              <div class="team-name">${away?.team?.shortDisplayName||awayAbbr}</div>
+            </div>
+            <div class="score-area">
+              <div class="score-num">${awayScore}</div>
+              <div class="score-sep">–</div>
+              <div class="score-num">${homeScore}</div>
+            </div>
+            <div class="team-block">
+              <div class="team-logo" style="background:${homeColor}">${homeAbbr}</div>
+              <div class="team-name">${home?.team?.shortDisplayName||homeAbbr}</div>
+            </div>
+          </div>
+          ${detail?`<div class="game-detail">${detail}</div>`:''}
+        </div></div>`;
+      });
+    } else {
+      html+=`<div class="card"><div class="card-inner" style="text-align:center;color:var(--muted);font-size:14px;padding:20px 16px">No games this week — check back during the season</div></div>`;
+    }
+
+    // Standings by division
+    standGroups.forEach(conf=>{
+      (conf.children||[conf]).forEach(div=>{
+        const entries=(div.standings?.entries||[]).slice(0,4);
+        if(!entries.length)return;
+        html+=`<div class="section-label">${div.name||conf.name||'Division'}</div><div class="card"><div class="standings-table">`;
+        entries.forEach((t,i)=>{
+          const name=t.team?.shortDisplayName||'—';
+          const w=t.stats?.find(s=>s.name==='wins')?.value||0;
+          const l=t.stats?.find(s=>s.name==='losses')?.value||0;
+          const pct=t.stats?.find(s=>s.name==='winPercent')?.displayValue||'';
+          html+=`<div class="standings-row ${i===0?'highlight':''}">
+            <div class="s-pos">${i+1}</div>
+            <div class="s-name">${name}</div>
+            <div class="s-pts">${w}-${l}<span class="s-pts-label"></span></div>
+            <div class="s-gap">${pct}</div>
+          </div>`;
+        });
+        html+=`</div></div>`;
+      });
+    });
+
+    // Yesterday's games
+    const ygamesNFL=await loadYesterdayNFL();
+    const ytoggleNFL=renderYesterdayToggle('nfl-yesterday',ygamesNFL,renderNFLGameCard);
+    if(ytoggleNFL) html+=`<div class="section-label">Previous Day</div>${ytoggleNFL}`;
+
+    html+=`<button class="refresh-btn" onclick="reloadNFL()">${refreshIcon()} Refresh NFL data</button>`;
+
+    // Podcast player
+    html+=`<div class="section-label">Podcast</div><div class="podcast-player" id="podcast-nfl"><div class="podcast-loading">Loading latest episode…</div></div>`;
+
+    content.innerHTML=html;
+    content.style.display='flex';
+    loading.style.display='none';
+    loadPodcast('nfl');
+  } catch(e){
+    loading.style.display='none';
+    content.innerHTML=`<div class="error-msg">Couldn't load NFL data.</div><button class="refresh-btn" onclick="reloadNFL()">${refreshIcon()} Try again</button>`;
+    content.style.display='flex';
+  }
+}
+function reloadNFL(){document.getElementById('nfl-loading').style.display='flex';document.getElementById('nfl-content').style.display='none';loadNFL()}
+
+// ── News with filters ──
+let newsFilter='all';
+function setNewsFilter(f){
+  newsFilter=f;
+  document.querySelectorAll('.news-filter').forEach(el=>{
+    el.className='news-filter';
+    if(el.dataset.filter===f) el.classList.add('active-'+f);
+  });
+  document.querySelectorAll('.news-item').forEach(el=>{
+    const sport=el.dataset.sport;
+    el.classList.toggle('hidden-item', f!=='all' && sport!==f);
+  });
+}
+
+// News ESPN endpoint map
+const NEWS_ENDPOINTS = {
+  f1:  'https://site.api.espn.com/apis/site/v2/sports/racing/f1/news?limit=12',
+  nhl: 'https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/news?limit=12',
+  nfl: 'https://site.api.espn.com/apis/site/v2/sports/football/nfl/news?limit=12',
+};
+
+async function loadNews(){
+  const loading=document.getElementById('news-loading');
+  const cnt=document.getElementById('news-content');
+  try{
+    const activeSports=ALL_SPORTS.filter(s=>isSportOn(s.id)&&NEWS_ENDPOINTS[s.id]);
+    if(!activeSports.length){
+      cnt.innerHTML='<div class="error-msg" style="background:var(--surface2);border-color:var(--border);color:var(--muted)">Enable at least one sport in Settings to see news.</div>';
+      cnt.style.display='flex'; loading.style.display='none'; return;
+    }
+    const responses=await Promise.all(activeSports.map(s=>fetch(NEWS_ENDPOINTS[s.id])));
+    const datas=await Promise.all(responses.map(r=>r.json()));
+    let items=[];
+    activeSports.forEach((s,i)=>{ (datas[i]?.articles||[]).forEach(a=>items.push({...a,sport:s.id})); });
+    items.sort((a,b)=>new Date(b.published||0)-new Date(a.published||0));
+    if(!items.length)throw new Error('No articles');
+
+    let html='<div class="news-filters"><div class="news-filter active-all" data-filter="all" onclick="setNewsFilter(\'all\')">All</div>';
+    activeSports.forEach(s=>{
+      const lbl=s.label==='Formula 1'?'F1':s.label;
+      html+=`<div class="news-filter" data-filter="${s.id}" onclick="setNewsFilter('${s.id}')">${lbl}</div>`;
+    });
+    html+='</div>';
+
+    html+='<div class="card"><div class="news-list">';
+    items.slice(0,30).forEach(item=>{
+      const ago=item.published?timeAgo(item.published):'';
+      const link=(item.links?.web?.href||'#').replace(/'/g,"%27");
+      const title=item.headline||item.title||'';
+      html+=`<div class="news-item" data-sport="${item.sport}" onclick="window.open('${link}','_blank')">
+        <span class="news-tag tag-${item.sport}">${item.sport.toUpperCase()}</span>
+        <div class="news-body"><div class="news-headline">${title}</div><div class="news-meta">${ago}</div></div>
+      </div>`;
+    });
+    html+='</div></div>';
+    html+=`<button class="refresh-btn" onclick="reloadNews()">${refreshIcon()} Refresh news</button>`;
+    cnt.innerHTML=html;
+    cnt.style.display='flex';
+    loading.style.display='none';
+  } catch(e){
+    loading.style.display='none';
+    cnt.innerHTML=`<div class="error-msg">Couldn't load news.</div><button class="refresh-btn" onclick="reloadNews()">${refreshIcon()} Try again</button>`;
+    cnt.style.display='flex';
+  }
+}
+function reloadNews(){document.getElementById('news-loading').style.display='flex';document.getElementById('news-content').style.display='none';loadNews()}
+
+// ── Previous Games (last 7 days) ──
+function dateStr(daysAgo){
+  const d=new Date(); d.setDate(d.getDate()-daysAgo);
+  return d.toISOString().slice(0,10).replace(/-/g,'');
+}
+
+async function loadPreviousNHL(){
+  // Fetch last 7 days in parallel, skip today (0)
+  const fetches=[];
+  for(let i=1;i<=7;i++) fetches.push((async(ago)=>{
+    const date=dateStr(ago);
+    try{
+      const r=await fetch(`https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard?dates=${date}`);
+      const d=await r.json();
+      const events=d?.events||[];
+      if(!events.length) return null;
+      const dayD=new Date(); dayD.setDate(dayD.getDate()-ago);
+      return{label:dayD.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}),games:events};
+    } catch(e){ return null; }
+  })(i));
+  const results=await Promise.all(fetches);
+  return results.filter(Boolean);
+}
+
+async function loadYesterdayNFL(){
+  const date=dateStr(1);
+  try{
+    const r=await fetch(`https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?dates=${date}`);
+    const d=await r.json();
+    return d?.events||[];
+  } catch(e){ return []; }
+}
+
+function renderPreviousNHLToggle(id, dayGroups, renderGameFn){
+  if(!dayGroups.length) return '';
+  const totalGames=dayGroups.reduce((s,g)=>s+g.games.length,0);
+  let html=`<div class="yesterday-toggle" onclick="toggleYesterday('${id}',this)">
+    <div class="yesterday-toggle-left">
+      <span class="yesterday-label">Previous Games</span>
+      <span class="yesterday-count">${totalGames} game${totalGames!==1?'s':''}</span>
+    </div>
+    <span class="yesterday-chevron">›</span>
+  </div>
+  <div class="yesterday-body" id="${id}">`;
+  dayGroups.forEach(group=>{
+    html+=`<div style="font-family:var(--font-m);font-size:10px;color:var(--faint);text-transform:uppercase;letter-spacing:.1em;padding:4px 4px 2px">${group.label}</div>`;
+    group.games.forEach(g=>{ html+=renderGameFn(g); });
+  });
+  html+=`</div>`;
+  return html;
+}
+
+function renderYesterdayToggle(id, games, renderGameFn){
+  if(!games.length) return '';
+  const d=new Date(); d.setDate(d.getDate()-1);
+  const label=d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+  let html=`<div class="yesterday-toggle" onclick="toggleYesterday('${id}',this)">
+    <div class="yesterday-toggle-left">
+      <span class="yesterday-label">Previous Day · ${label}</span>
+      <span class="yesterday-count">${games.length} game${games.length!==1?'s':''}</span>
+    </div>
+    <span class="yesterday-chevron">›</span>
+  </div>
+  <div class="yesterday-body" id="${id}">`;
+  games.forEach(g=>{ html+=renderGameFn(g); });
+  html+=`</div>`;
+  return html;
+}
+
+function toggleYesterday(id, btn){
+  const body=document.getElementById(id);
+  const chevron=btn.querySelector('.yesterday-chevron');
+  const open=body.classList.toggle('open');
+  chevron.style.transform=open?'rotate(90deg)':'';
+}
+
+function renderNHLGameCard(g){
+  const comp=g.competitions?.[0];
+  const home=comp?.competitors?.find(c=>c.homeAway==='home');
+  const away=comp?.competitors?.find(c=>c.homeAway==='away');
+  const homeAbbr=home?.team?.abbreviation||'';
+  const awayAbbr=away?.team?.abbreviation||'';
+  const homeScore=home?.score??'–';
+  const awayScore=away?.score??'–';
+  const homeColor=NHL_COLORS[homeAbbr]||'#333';
+  const awayColor=NHL_COLORS[awayAbbr]||'#333';
+  const detail=comp?.status?.type?.shortDetail||'Final';
+  return `<div class="card"><div class="card-inner">
+    <div class="game-status-row"><span class="badge badge-final">Final</span></div>
+    <div class="matchup">
+      <div class="team-block"><div class="team-logo" style="background:${awayColor}">${awayAbbr}</div><div class="team-name">${away?.team?.shortDisplayName||awayAbbr}</div></div>
+      <div class="score-area"><div class="score-num">${awayScore}</div><div class="score-sep">–</div><div class="score-num">${homeScore}</div></div>
+      <div class="team-block"><div class="team-logo" style="background:${homeColor}">${homeAbbr}</div><div class="team-name">${home?.team?.shortDisplayName||homeAbbr}</div></div>
+    </div>
+    <div class="game-detail">${detail}</div>
+  </div></div>`;
+}
+
+function renderNFLGameCard(g){
+  const comp=g.competitions?.[0];
+  const home=comp?.competitors?.find(c=>c.homeAway==='home');
+  const away=comp?.competitors?.find(c=>c.homeAway==='away');
+  const homeAbbr=home?.team?.abbreviation||'';
+  const awayAbbr=away?.team?.abbreviation||'';
+  const homeScore=home?.score??'–';
+  const awayScore=away?.score??'–';
+  const homeColor=NFL_COLORS[homeAbbr]||'#333';
+  const awayColor=NFL_COLORS[awayAbbr]||'#333';
+  const detail=comp?.status?.type?.shortDetail||'Final';
+  return `<div class="card"><div class="card-inner">
+    <div class="game-status-row"><span class="badge badge-final">Final</span></div>
+    <div class="matchup">
+      <div class="team-block"><div class="team-logo" style="background:${awayColor}">${awayAbbr}</div><div class="team-name">${away?.team?.shortDisplayName||awayAbbr}</div></div>
+      <div class="score-area"><div class="nfl-score-num">${awayScore}</div><div class="score-sep">–</div><div class="nfl-score-num">${homeScore}</div></div>
+      <div class="team-block"><div class="team-logo" style="background:${homeColor}">${homeAbbr}</div><div class="team-name">${home?.team?.shortDisplayName||homeAbbr}</div></div>
+    </div>
+    <div class="game-detail">${detail}</div>
+  </div></div>`;
+}
+
+// ── Podcast Player ──
+const PODCASTS = {
+  f1:  { show:'P1 with Matt & Tommy',     feed:'https://feeds.acast.com/public/shows/63e24225436c36001119fc66', accent:'f1-red',  btnClass:'' },
+  nhl: { show:'The Athletic Hockey Show',  feed:'https://feeds.acast.com/public/shows/6818bb89f30c20bff73c9ebc', accent:'nhl-blue', btnClass:'nhl-btn' },
+  nfl: { show:'The Athletic Football Show',feed:'https://feeds.acast.com/public/shows/681cc905bdc60241406b737f', accent:'nfl-blue', btnClass:'nfl-btn' },
+};
+
+// Use rss2json as a CORS-safe proxy for RSS feeds
+const RSS_PROXY='https://api.rss2json.com/v1/api.json?rss_url=';
+
+const podcastState={};  // keyed by sport
+
+async function fetchRSS(feedUrl){
+  // Try direct fetch first (Acast is CORS-friendly)
+  try {
+    const r = await fetch(feedUrl);
+    if(!r.ok) throw new Error('bad status');
+    const text = await r.text();
+    const parser = new DOMParser();
+    const xml = parser.parseFromString(text, 'application/xml');
+    const channel = xml.querySelector('channel');
+    const item = xml.querySelector('item');
+    if(!item) throw new Error('no items');
+
+    const enclosure = item.querySelector('enclosure');
+    const audioUrl = enclosure?.getAttribute('url') || '';
+    const title = item.querySelector('title')?.textContent || 'Latest Episode';
+    const pubDate = item.querySelector('pubDate')?.textContent || '';
+    const duration = item.querySelector('duration')?.textContent || '';
+    const imgUrl = channel.querySelector('image url')?.textContent
+      || xml.querySelector('*|image')?.getAttribute('href')
+      || '';
+
+    return { audioUrl, title, pubDate, duration, imgUrl };
+  } catch(e) {
+    // Fallback: rss2json proxy
+    const r2 = await fetch(RSS_PROXY + encodeURIComponent(feedUrl) + '&count=1');
+    const d = await r2.json();
+    const item = d?.items?.[0];
+    if(!item) throw new Error('No episode found');
+    return {
+      audioUrl: item.enclosure?.link || item.enclosure?.url || '',
+      title: item.title || 'Latest Episode',
+      pubDate: item.pubDate || '',
+      duration: item.itunes_duration || '',
+      imgUrl: d?.feed?.image || item.thumbnail || '',
+    };
+  }
+}
+
+async function loadPodcast(sport){
+  const container=document.getElementById(`podcast-${sport}`);
+  if(!container) return;
+  const cfg=PODCASTS[sport];
+  if(!cfg) return;
+
+  // Don't reload if already loaded
+  if(podcastState[sport]?.loaded) return;
+
+  container.innerHTML=`<div class="podcast-loading">Loading latest episode…</div>`;
+
+  try{
+    const {audioUrl,title,pubDate,duration,imgUrl} = await fetchRSS(cfg.feed);
+    const formattedDate = pubDate ? new Date(pubDate).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '';
+
+    podcastState[sport]={loaded:true,audioUrl,title,pubDate:formattedDate,duration,playing:false,audio:null};
+
+    const artHtml=imgUrl
+      ?`<img src="${imgUrl}" alt="" onerror="this.style.display='none'">`
+      :`🎙️`;
+
+    container.innerHTML=`
+      <div class="podcast-header">
+        <div class="podcast-art">${artHtml}</div>
+        <div class="podcast-info">
+          <div class="podcast-show">${cfg.show}</div>
+          <div class="podcast-episode">${title}</div>
+          <div class="podcast-meta">${formattedDate}${duration?' · '+fmtDuration(duration):''}</div>
+        </div>
+      </div>
+      <div class="podcast-controls">
+        <button class="podcast-play-btn ${cfg.btnClass}" id="podcast-btn-${sport}" onclick="togglePodcast('${sport}')">
+          ${playIcon()}
+        </button>
+        <div class="podcast-progress-wrap">
+          <input type="range" class="podcast-progress" id="podcast-scrub-${sport}" value="0" min="0" max="100" step="0.1"
+            oninput="scrubPodcast('${sport}',this.value)">
+          <div class="podcast-time-row">
+            <span class="podcast-time" id="podcast-cur-${sport}">0:00</span>
+            <span class="podcast-time" id="podcast-dur-${sport}">${duration?fmtDuration(duration):''}</span>
+          </div>
+        </div>
+      </div>`;
+  } catch(e){
+    container.innerHTML=`<div class="podcast-error">Couldn't load podcast. <span style="color:var(--faint)">Check back later.</span></div>`;
+  }
+}
+
+function playIcon(){ return `<svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>`; }
+function pauseIcon(){ return `<svg viewBox="0 0 24 24" fill="#fff"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>`; }
+
+function fmtDuration(s){
+  if(!s) return '';
+  // Could be "HH:MM:SS" or total seconds
+  if(typeof s==='string'&&s.includes(':')){
+    const parts=s.split(':').map(Number);
+    if(parts.length===3) return `${parts[0]?parts[0]+'h ':''}${parts[1]}m`;
+    if(parts.length===2) return `${parts[0]}m`;
+  }
+  const secs=parseInt(s)||0;
+  const m=Math.floor(secs/60), sec=secs%60;
+  return `${m}:${String(sec).padStart(2,'0')}`;
+}
+
+function fmtTime(secs){
+  if(!isFinite(secs)||secs<0) return '0:00';
+  const m=Math.floor(secs/60), s=Math.floor(secs%60);
+  return `${m}:${String(s).padStart(2,'0')}`;
+}
+
+function togglePodcast(sport){
+  const state=podcastState[sport];
+  if(!state||!state.audioUrl) return;
+  const btn=document.getElementById(`podcast-btn-${sport}`);
+
+  if(!state.audio){
+    state.audio=new Audio(state.audioUrl);
+    state.audio.addEventListener('timeupdate',()=>{
+      const cur=document.getElementById(`podcast-cur-${sport}`);
+      const scrub=document.getElementById(`podcast-scrub-${sport}`);
+      const dur=document.getElementById(`podcast-dur-${sport}`);
+      if(cur) cur.textContent=fmtTime(state.audio.currentTime);
+      if(scrub&&state.audio.duration) scrub.value=(state.audio.currentTime/state.audio.duration)*100;
+      if(dur&&state.audio.duration&&!state.durationSet){state.durationSet=true;dur.textContent=fmtTime(state.audio.duration);}
+    });
+    state.audio.addEventListener('ended',()=>{
+      state.playing=false;
+      if(btn) btn.innerHTML=playIcon();
+    });
+  }
+
+  if(state.playing){
+    state.audio.pause();
+    state.playing=false;
+    if(btn) btn.innerHTML=playIcon();
+  } else {
+    // Pause other sports
+    Object.keys(podcastState).forEach(s=>{
+      if(s!==sport&&podcastState[s]?.playing){
+        podcastState[s].audio?.pause();
+        podcastState[s].playing=false;
+        const ob=document.getElementById(`podcast-btn-${s}`);
+        if(ob) ob.innerHTML=playIcon();
+      }
+    });
+    state.audio.play();
+    state.playing=true;
+    if(btn) btn.innerHTML=pauseIcon();
+  }
+}
+
+function scrubPodcast(sport, val){
+  const state=podcastState[sport];
+  if(state?.audio&&state.audio.duration){
+    state.audio.currentTime=(val/100)*state.audio.duration;
+  }
+}
+
+// ── Init ──
+applyTabVisibility();
+if(isSportOn('f1'))  loadF1();
+if(isSportOn('nhl')) loadNHL();
+if(isSportOn('nfl')) loadNFL();
+loadNews();
+</script>
+</body>
+</html>
