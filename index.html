@@ -223,6 +223,36 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--font-b);min-h
 .podcast-time{font-family:var(--font-m);font-size:10px;color:var(--faint)}
 .podcast-loading{padding:14px;text-align:center;font-family:var(--font-m);font-size:11px;color:var(--faint)}
 .podcast-error{padding:12px 14px;font-size:12px;color:var(--faint);text-align:center}
+
+/* ── Collapsible F1 sections ── */
+.collapsible-toggle{display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;padding:4px 0 8px}
+.collapsible-toggle-label{font-family:var(--font-m);font-size:10px;font-weight:500;color:var(--faint);text-transform:uppercase;letter-spacing:.12em}
+.collapsible-chevron{font-size:13px;color:var(--faint);transition:transform .25s;line-height:1}
+.collapsible-body{overflow:hidden;transition:max-height .3s ease}
+.collapsible-body.collapsed{max-height:0!important}
+
+/* ── Detail modal overlay ── */
+.detail-overlay{position:fixed;inset:0;z-index:999;display:flex;flex-direction:column;justify-content:flex-end;opacity:0;pointer-events:none;transition:opacity .25s}
+.detail-overlay.open{opacity:1;pointer-events:all}
+.detail-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+.detail-sheet{position:relative;background:var(--bg);border-radius:24px 24px 0 0;overflow:hidden;max-height:92vh;transform:translateY(100%);transition:transform .3s cubic-bezier(.32,1,.5,1);display:flex;flex-direction:column}
+.detail-overlay.open .detail-sheet{transform:translateY(0)}
+.detail-hero{position:relative;width:100%;height:260px;flex-shrink:0;overflow:hidden;background:#111}
+.detail-hero-img{width:100%;height:100%;object-fit:cover;object-position:center top;display:block}
+.detail-hero-gradient{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.1) 0%,rgba(0,0,0,.0) 40%,var(--bg) 100%)}
+.detail-hero-accent{position:absolute;inset:0;opacity:.25}
+.detail-close{position:absolute;top:16px;right:16px;width:30px;height:30px;border-radius:50%;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.15);color:#fff;font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;line-height:1;z-index:2}
+.detail-body{padding:20px 20px 36px;overflow-y:auto;flex:1}
+.detail-number{font-family:var(--font-d);font-size:72px;line-height:.9;color:rgba(255,255,255,.08);position:absolute;bottom:16px;left:20px;letter-spacing:-2px;pointer-events:none}
+.detail-name{font-family:var(--font-d);font-size:36px;line-height:1;letter-spacing:.5px;margin-bottom:4px}
+.detail-sub{font-size:13px;color:var(--muted);margin-bottom:20px;display:flex;align-items:center;gap:8px}
+.detail-team-bar{display:inline-block;width:10px;height:10px;border-radius:2px;flex-shrink:0}
+.detail-stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
+.detail-stat-cell{background:var(--surface);border-radius:12px;padding:14px}
+.detail-stat-val{font-family:var(--font-d);font-size:28px;line-height:1;color:var(--text)}
+.detail-stat-label{font-size:10px;color:var(--faint);text-transform:uppercase;letter-spacing:.08em;margin-top:4px}
+.detail-loading{display:flex;align-items:center;justify-content:center;height:80px;gap:10px;color:var(--faint);font-family:var(--font-m);font-size:12px}
+.detail-tag{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px;margin-bottom:16px}
 </style>
 </head>
 <body>
@@ -265,6 +295,22 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--font-b);min-h
   </div>
   <div class="panel" id="panel-settings">
     <div id="settings-content" style="display:flex;flex-direction:column;gap:16px"></div>
+  </div>
+</div>
+
+<!-- ── F1 Detail Modal ── -->
+<div class="detail-overlay" id="detail-overlay" onclick="closeDetailModal(event)">
+  <div class="detail-backdrop"></div>
+  <div class="detail-sheet" id="detail-sheet">
+    <div class="detail-hero" id="detail-hero">
+      <div class="detail-hero-accent" id="detail-hero-accent"></div>
+      <img class="detail-hero-img" id="detail-hero-img" src="" alt="" onerror="this.style.display='none'">
+      <div class="detail-hero-gradient"></div>
+      <div class="detail-close" onclick="closeDetailModal(null,true)">✕</div>
+    </div>
+    <div class="detail-body" id="detail-body">
+      <div class="detail-loading"><div class="spinner"></div>Loading...</div>
+    </div>
   </div>
 </div>
 
@@ -576,15 +622,17 @@ async function loadF1(){
   const content=document.getElementById('f1-content');
   try{
     const now=new Date();
-    const [resSched,resLast,resDrv]=await Promise.all([
+    const [resSched,resLast,resDrv,resCon]=await Promise.all([
       fetch('https://api.jolpi.ca/ergast/f1/current.json'),
       fetch('https://api.jolpi.ca/ergast/f1/current/last/results.json'),
-      fetch('https://api.jolpi.ca/ergast/f1/current/driverStandings.json')
+      fetch('https://api.jolpi.ca/ergast/f1/current/driverStandings.json'),
+      fetch('https://api.jolpi.ca/ergast/f1/current/constructorStandings.json')
     ]);
-    const [dataSched,dataLast,dataDrv]=await Promise.all([resSched.json(),resLast.json(),resDrv.json()]);
+    const [dataSched,dataLast,dataDrv,dataCon]=await Promise.all([resSched.json(),resLast.json(),resDrv.json(),resCon.json()]);
     const allRaces=dataSched?.MRData?.RaceTable?.Races||[];
     const lastRace=dataLast?.MRData?.RaceTable?.Races?.[0];
     const drivers=dataDrv?.MRData?.StandingsTable?.StandingsLists?.[0]?.DriverStandings?.slice(0,8)||[];
+    const constructors=dataCon?.MRData?.StandingsTable?.StandingsLists?.[0]?.ConstructorStandings?.slice(0,10)||[];
 
     function sessionDT(s){if(!s?.date)return null;return new Date(s.date+'T'+(s.time||'00:00:00'))}
     function isLive(s){const t=sessionDT(s);if(!t)return false;const m=(now-t)/60000;return m>=0&&m<120}
@@ -689,7 +737,13 @@ async function loadF1(){
     // ── Last race results (if not same as current) ──
     if(lastRace&&(!currentRace||currentRace.round!==lastRace.round)){
       const results=lastRace.Results?.slice(0,5)||[];
-      html+=`<div class="section-label">Last Race</div>
+      html+=`<div class="section-label">
+        <div class="collapsible-toggle" onclick="toggleCollapsible('f1-last-race',this)">
+          <span class="collapsible-toggle-label">Last Race</span>
+          <span class="collapsible-chevron">›</span>
+        </div>
+      </div>
+      <div class="collapsible-body" id="f1-last-race" style="max-height:600px">
       <div class="card"><div class="card-inner">
         <div class="race-meta">
           <div>
@@ -702,7 +756,7 @@ async function loadF1(){
       results.forEach((r,i)=>{
         const col=teamColor(r.Constructor?.name||'');
         const time=i===0?(r.Time?.time||r.status):(r.Time?.time?'+'+r.Time.time:r.status);
-        html+=`<div class="podium-row ${i===0?'p1':''}">
+        html+=`<div class="podium-row ${i===0?'p1':''}" style="cursor:pointer" onclick="openDriverDetail('${r.Driver?.driverId||''}','${r.Driver?.givenName} ${r.Driver?.familyName}','${r.Constructor?.name||''}','${r.Driver?.permanentNumber||''}','${col}','${r.Driver?.nationality||''}')">
           <div class="pos-num ${i===0?'gold':''}">${r.position}</div>
           <div class="team-bar" style="background:${col}"></div>
           <div class="driver-col">
@@ -712,23 +766,60 @@ async function loadF1(){
           <div class="driver-time">${time}</div>
         </div>`;
       });
-      html+=`</div></div></div></div>`;
+      html+=`</div></div></div></div>
+      </div>`;
     }
 
     // ── Driver standings ──
     if(drivers.length){
       const leader=parseFloat(drivers[0]?.points||0);
-      html+=`<div class="section-label">Driver Standings</div><div class="card"><div class="standings-table">`;
+      html+=`<div class="section-label">
+        <div class="collapsible-toggle" onclick="toggleCollapsible('f1-driver-standings',this)">
+          <span class="collapsible-toggle-label">Driver Standings</span>
+          <span class="collapsible-chevron">›</span>
+        </div>
+      </div>
+      <div class="collapsible-body" id="f1-driver-standings" style="max-height:800px">
+      <div class="card"><div class="standings-table">`;
       drivers.forEach((d,i)=>{
         const pts=parseFloat(d.points);
-        html+=`<div class="standings-row ${i<3?'highlight':''}">
+        const col=teamColor(d.Constructors?.[0]?.name||'');
+        html+=`<div class="standings-row ${i<3?'highlight':''}" style="cursor:pointer" onclick="openDriverDetail('${d.Driver?.driverId||''}','${d.Driver?.givenName} ${d.Driver?.familyName}','${d.Constructors?.[0]?.name||''}','${d.Driver?.permanentNumber||''}','${col}','${d.Driver?.nationality||''}')">
           <div class="s-pos">${d.position}</div>
+          <div style="width:3px;height:20px;border-radius:2px;background:${col};flex-shrink:0"></div>
           <div class="s-name">${d.Driver?.givenName?.[0]}. ${d.Driver?.familyName}</div>
           <div class="s-pts">${Math.round(pts)}<span class="s-pts-label">pts</span></div>
           <div class="s-gap">${i===0?'—':'−'+(leader-pts)}</div>
         </div>`;
       });
-      html+=`</div></div>`;
+      html+=`</div></div>
+      </div>`;
+    }
+
+    // ── Constructor / Team standings ──
+    if(constructors.length){
+      const leaderPts=parseFloat(constructors[0]?.points||0);
+      html+=`<div class="section-label">
+        <div class="collapsible-toggle" onclick="toggleCollapsible('f1-team-standings',this)">
+          <span class="collapsible-toggle-label">Team Standings</span>
+          <span class="collapsible-chevron">›</span>
+        </div>
+      </div>
+      <div class="collapsible-body" id="f1-team-standings" style="max-height:800px">
+      <div class="card"><div class="standings-table">`;
+      constructors.forEach((c,i)=>{
+        const pts=parseFloat(c.points);
+        const col=teamColor(c.Constructor?.name||'');
+        html+=`<div class="standings-row ${i<3?'highlight':''}" style="cursor:pointer" onclick="openTeamDetail('${c.Constructor?.constructorId||''}','${c.Constructor?.name||''}','${col}','${c.Constructor?.nationality||''}')">
+          <div class="s-pos">${c.position}</div>
+          <div style="width:3px;height:20px;border-radius:2px;background:${col};flex-shrink:0"></div>
+          <div class="s-name">${c.Constructor?.name||''}</div>
+          <div class="s-pts">${Math.round(pts)}<span class="s-pts-label">pts</span></div>
+          <div class="s-gap">${i===0?'—':'−'+(leaderPts-pts)}</div>
+        </div>`;
+      });
+      html+=`</div></div>
+      </div>`;
     }
 
     html+=`<button class="refresh-btn" onclick="reloadF1()">${refreshIcon()} Refresh F1 data</button>`;
@@ -1246,46 +1337,66 @@ const PODCASTS = {
   nfl: { show:'The Athletic Football Show',feed:'https://feeds.acast.com/public/shows/681cc905bdc60241406b737f', accent:'nfl-blue', btnClass:'nfl-btn' },
 };
 
-// Use rss2json as a CORS-safe proxy for RSS feeds
+// Use Netlify function proxy first (CORS-safe), fall back to rss2json
 const RSS_PROXY='https://api.rss2json.com/v1/api.json?rss_url=';
+const NETLIFY_PROXY='/.netlify/functions/proxy?url=';
 
 const podcastState={};  // keyed by sport
 
 async function fetchRSS(feedUrl){
-  // Try direct fetch first (Acast is CORS-friendly)
+  // Try Netlify function proxy first (deployed via GitHub)
   try {
-    const r = await fetch(feedUrl);
-    if(!r.ok) throw new Error('bad status');
+    const r = await fetch(NETLIFY_PROXY + encodeURIComponent(feedUrl));
+    if(!r.ok) throw new Error('proxy error');
     const text = await r.text();
     const parser = new DOMParser();
     const xml = parser.parseFromString(text, 'application/xml');
-    const channel = xml.querySelector('channel');
     const item = xml.querySelector('item');
     if(!item) throw new Error('no items');
-
+    const channel = xml.querySelector('channel');
     const enclosure = item.querySelector('enclosure');
     const audioUrl = enclosure?.getAttribute('url') || '';
     const title = item.querySelector('title')?.textContent || 'Latest Episode';
     const pubDate = item.querySelector('pubDate')?.textContent || '';
     const duration = item.querySelector('duration')?.textContent || '';
-    const imgUrl = channel.querySelector('image url')?.textContent
+    const imgUrl = channel?.querySelector('image url')?.textContent
       || xml.querySelector('*|image')?.getAttribute('href')
       || '';
-
     return { audioUrl, title, pubDate, duration, imgUrl };
-  } catch(e) {
-    // Fallback: rss2json proxy
-    const r2 = await fetch(RSS_PROXY + encodeURIComponent(feedUrl) + '&count=1');
-    const d = await r2.json();
-    const item = d?.items?.[0];
-    if(!item) throw new Error('No episode found');
-    return {
-      audioUrl: item.enclosure?.link || item.enclosure?.url || '',
-      title: item.title || 'Latest Episode',
-      pubDate: item.pubDate || '',
-      duration: item.itunes_duration || '',
-      imgUrl: d?.feed?.image || item.thumbnail || '',
-    };
+  } catch(proxyErr) {
+    // Fall back: try direct fetch (may work on some feeds)
+    try {
+      const r = await fetch(feedUrl);
+      if(!r.ok) throw new Error('bad status');
+      const text = await r.text();
+      const parser = new DOMParser();
+      const xml = parser.parseFromString(text, 'application/xml');
+      const channel = xml.querySelector('channel');
+      const item = xml.querySelector('item');
+      if(!item) throw new Error('no items');
+      const enclosure = item.querySelector('enclosure');
+      const audioUrl = enclosure?.getAttribute('url') || '';
+      const title = item.querySelector('title')?.textContent || 'Latest Episode';
+      const pubDate = item.querySelector('pubDate')?.textContent || '';
+      const duration = item.querySelector('duration')?.textContent || '';
+      const imgUrl = channel.querySelector('image url')?.textContent
+        || xml.querySelector('*|image')?.getAttribute('href')
+        || '';
+      return { audioUrl, title, pubDate, duration, imgUrl };
+    } catch(e) {
+      // Final fallback: rss2json
+      const r2 = await fetch(RSS_PROXY + encodeURIComponent(feedUrl) + '&count=1');
+      const d = await r2.json();
+      const item = d?.items?.[0];
+      if(!item) throw new Error('No episode found');
+      return {
+        audioUrl: item.enclosure?.link || item.enclosure?.url || '',
+        title: item.title || 'Latest Episode',
+        pubDate: item.pubDate || '',
+        duration: item.itunes_duration || '',
+        imgUrl: d?.feed?.image || item.thumbnail || '',
+      };
+    }
   }
 }
 
@@ -1405,6 +1516,165 @@ function scrubPodcast(sport, val){
   if(state?.audio&&state.audio.duration){
     state.audio.currentTime=(val/100)*state.audio.duration;
   }
+}
+
+// ── Collapsible sections ──
+function toggleCollapsible(id, toggleEl){
+  const body=document.getElementById(id);
+  if(!body) return;
+  const chevron=toggleEl.querySelector('.collapsible-chevron');
+  const isCollapsed=body.classList.contains('collapsed');
+  if(isCollapsed){
+    body.classList.remove('collapsed');
+    if(chevron) chevron.style.transform='';
+  } else {
+    body.classList.add('collapsed');
+    if(chevron) chevron.style.transform='rotate(-90deg)';
+  }
+}
+
+// ── F1 Detail Modal ──
+// Driver images via Wikipedia API; team images via Wikimedia Commons
+const DRIVER_WIKI = {
+  'max_verstappen':'Max_Verstappen','lando_norris':'Lando_Norris','charles_leclerc':'Charles_Leclerc',
+  'oscar_piastri':'Oscar_Piastri','carlos_sainz':'Carlos_Sainz','george_russell':'George_Russell',
+  'lewis_hamilton':'Lewis_Hamilton','fernando_alonso':'Fernando_Alonso','lance_stroll':'Lance_Stroll',
+  'pierre_gasly':'Pierre_Gasly','esteban_ocon':'Esteban_Ocon','alexander_albon':'Alexander_Albon',
+  'franco_colapinto':'Franco_Colapinto','oliver_bearman':'Oliver_Bearman','nico_hulkenberg':'Nico_Hülkenberg',
+  'kevin_magnussen':'Kevin_Magnussen','valtteri_bottas':'Valtteri_Bottas','guanyu_zhou':'Zhou_Guanyu',
+  'yuki_tsunoda':'Yuki_Tsunoda','liam_lawson':'Liam_Lawson','isack_hadjar':'Isack_Hadjar',
+  'jack_doohan':'Jack_Doohan','gabriel_bortoleto':'Gabriel_Bortoleto','andrea_kimi_antonelli':'Kimi_Antonelli',
+};
+
+const TEAM_WIKI = {
+  'mclaren':'McLaren_F1_Team','red_bull':'Red_Bull_Racing','ferrari':'Scuderia_Ferrari',
+  'mercedes':'Mercedes-AMG_Petronas_F1_Team','aston_martin':'Aston_Martin_Aramco_F1_Team',
+  'alpine':'Alpine_F1_Team','williams':'Williams_Racing','haas':'Haas_F1_Team',
+  'rb':'Racing_Bulls','sauber':'Stake_F1_Team_Kick_Sauber',
+};
+
+const NATIONALITY_FLAGS = {
+  'British':'🇬🇧','German':'🇩🇪','Spanish':'🇪🇸','Finnish':'🇫🇮','Dutch':'🇳🇱','French':'🇫🇷',
+  'Australian':'🇦🇺','Canadian':'🇨🇦','Mexican':'🇲🇽','Brazilian':'🇧🇷','Japanese':'🇯🇵',
+  'Chinese':'🇨🇳','Danish':'🇩🇰','American':'🇺🇸','Monegasque':'🇲🇨','Thai':'🇹🇭','Italian':'🇮🇹',
+  'New Zealander':'🇳🇿','Argentine':'🇦🇷','Swiss':'🇨🇭','Austrian':'🇦🇹',
+};
+
+async function fetchWikiImage(title){
+  try {
+    const url=`https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(title)}&prop=pageimages&pithumbsize=600&format=json&origin=*`;
+    const r=await fetch(url);
+    const d=await r.json();
+    const pages=d?.query?.pages;
+    const page=pages?.[Object.keys(pages)[0]];
+    return page?.thumbnail?.source||null;
+  } catch(e){ return null; }
+}
+
+async function fetchDriverStats(driverId){
+  try {
+    const r=await fetch(`https://api.jolpi.ca/ergast/f1/current/driverStandings.json`);
+    const d=await r.json();
+    const standings=d?.MRData?.StandingsTable?.StandingsLists?.[0]?.DriverStandings||[];
+    return standings.find(s=>s.Driver?.driverId===driverId)||null;
+  } catch(e){ return null; }
+}
+
+async function fetchTeamStats(constructorId){
+  try {
+    const r=await fetch(`https://api.jolpi.ca/ergast/f1/current/constructorStandings.json`);
+    const d=await r.json();
+    const standings=d?.MRData?.StandingsTable?.StandingsLists?.[0]?.ConstructorStandings||[];
+    return standings.find(s=>s.Constructor?.constructorId===constructorId)||null;
+  } catch(e){ return null; }
+}
+
+function openDetailModal(){
+  const overlay=document.getElementById('detail-overlay');
+  document.body.style.overflow='hidden';
+  overlay.classList.add('open');
+}
+
+function closeDetailModal(e, force){
+  if(!force&&e&&document.getElementById('detail-sheet').contains(e.target)) return;
+  const overlay=document.getElementById('detail-overlay');
+  overlay.classList.remove('open');
+  document.body.style.overflow='';
+  setTimeout(()=>{
+    document.getElementById('detail-hero-img').src='';
+    document.getElementById('detail-body').innerHTML='<div class="detail-loading"><div class="spinner"></div>Loading...</div>';
+    document.getElementById('detail-hero-accent').style.background='';
+  },300);
+}
+
+async function openDriverDetail(driverId, fullName, team, number, teamCol, nationality){
+  openDetailModal();
+  const accentEl=document.getElementById('detail-hero-accent');
+  accentEl.style.background=`linear-gradient(135deg, ${teamCol}44 0%, transparent 60%)`;
+
+  const wikiKey=DRIVER_WIKI[driverId];
+  const [imgSrc, statsEntry]=await Promise.all([
+    wikiKey?fetchWikiImage(wikiKey):Promise.resolve(null),
+    fetchDriverStats(driverId)
+  ]);
+
+  const imgEl=document.getElementById('detail-hero-img');
+  if(imgSrc){ imgEl.src=imgSrc; imgEl.style.display=''; }
+  else imgEl.style.display='none';
+
+  const natFlag=NATIONALITY_FLAGS[nationality]||'🏁';
+  const pts=statsEntry?Math.round(parseFloat(statsEntry.points||0)):null;
+  const pos=statsEntry?.position||null;
+  const wins=statsEntry?.wins||null;
+
+  document.getElementById('detail-body').innerHTML=`
+    <div class="detail-tag" style="background:${teamCol}22;color:${teamCol};border:1px solid ${teamCol}44">
+      <span style="width:8px;height:8px;border-radius:2px;background:${teamCol};display:inline-block"></span>
+      ${team}
+    </div>
+    <div class="detail-name">${fullName}</div>
+    <div class="detail-sub">${natFlag} ${nationality} · #${number||'—'}</div>
+    ${pts!==null?`<div class="detail-stats-grid">
+      <div class="detail-stat-cell"><div class="detail-stat-val">${pos||'—'}</div><div class="detail-stat-label">Championship</div></div>
+      <div class="detail-stat-cell"><div class="detail-stat-val">${pts}</div><div class="detail-stat-label">Points</div></div>
+      <div class="detail-stat-cell"><div class="detail-stat-val">${wins||0}</div><div class="detail-stat-label">Wins</div></div>
+      <div class="detail-stat-cell"><div class="detail-stat-val">${statsEntry?.wins||0}</div><div class="detail-stat-label">2025 Wins</div></div>
+    </div>`:''}
+  `;
+}
+
+async function openTeamDetail(constructorId, name, teamCol, nationality){
+  openDetailModal();
+  const accentEl=document.getElementById('detail-hero-accent');
+  accentEl.style.background=`linear-gradient(135deg, ${teamCol}55 0%, transparent 70%)`;
+
+  const wikiKey=TEAM_WIKI[constructorId];
+  const [imgSrc, statsEntry]=await Promise.all([
+    wikiKey?fetchWikiImage(wikiKey):Promise.resolve(null),
+    fetchTeamStats(constructorId)
+  ]);
+
+  const imgEl=document.getElementById('detail-hero-img');
+  if(imgSrc){ imgEl.src=imgSrc; imgEl.style.display=''; }
+  else imgEl.style.display='none';
+
+  const natFlag=NATIONALITY_FLAGS[nationality]||'🏁';
+  const pts=statsEntry?Math.round(parseFloat(statsEntry.points||0)):null;
+  const pos=statsEntry?.position||null;
+  const wins=statsEntry?.wins||null;
+
+  document.getElementById('detail-body').innerHTML=`
+    <div class="detail-tag" style="background:${teamCol}22;color:${teamCol};border:1px solid ${teamCol}44">
+      🏎️ Constructor
+    </div>
+    <div class="detail-name">${name}</div>
+    <div class="detail-sub">${natFlag} ${nationality}</div>
+    ${pts!==null?`<div class="detail-stats-grid">
+      <div class="detail-stat-cell"><div class="detail-stat-val">${pos||'—'}</div><div class="detail-stat-label">Position</div></div>
+      <div class="detail-stat-cell"><div class="detail-stat-val">${pts}</div><div class="detail-stat-label">Points</div></div>
+      <div class="detail-stat-cell"><div class="detail-stat-val">${wins||0}</div><div class="detail-stat-label">Wins</div></div>
+    </div>`:''}
+  `;
 }
 
 // ── Init ──
