@@ -1334,7 +1334,7 @@ function renderNFLGameCard(g){
 const PODCASTS = {
   f1:  { show:'P1 with Matt & Tommy',     feed:'https://feeds.acast.com/public/shows/63e24225436c36001119fc66', accent:'f1-red',  btnClass:'' },
   nhl: { show:'The Athletic Hockey Show',  feed:'https://feeds.acast.com/public/shows/6818bb89f30c20bff73c9ebc', accent:'nhl-blue', btnClass:'nhl-btn' },
-  nfl: { show:'The Athletic Football Show',feed:'https://feeds.acast.com/public/shows/681cc905bdc60241406b737f', accent:'nfl-blue', btnClass:'nfl-btn' },
+  nfl: { show:'The Athletic Football Show',feed:'https://feeds.acast.com/public/shows/the-athletic-football-show-a-show-about-the-nfl', accent:'nfl-blue', btnClass:'nfl-btn' },
 };
 
 // Use Netlify function proxy first (CORS-safe), fall back to rss2json
@@ -1573,11 +1573,21 @@ async function fetchWikiImage(title){
 
 async function fetchDriverStats(driverId){
   try {
-    const r=await fetch(`https://api.jolpi.ca/ergast/f1/current/driverStandings.json`);
-    const d=await r.json();
-    const standings=d?.MRData?.StandingsTable?.StandingsLists?.[0]?.DriverStandings||[];
-    return standings.find(s=>s.Driver?.driverId===driverId)||null;
-  } catch(e){ return null; }
+    const [standRes, careerRes] = await Promise.all([
+      fetch(`https://api.jolpi.ca/ergast/f1/current/driverStandings.json`),
+      fetch(`https://api.jolpi.ca/ergast/f1/drivers/${driverId}/results.json?limit=1000`)
+    ]);
+    const [standData, careerData] = await Promise.all([standRes.json(), careerRes.json()]);
+    const standings = standData?.MRData?.StandingsTable?.StandingsLists?.[0]?.DriverStandings||[];
+    const entry = standings.find(s=>s.Driver?.driverId===driverId)||null;
+    // Count career podiums from results
+    const results = careerData?.MRData?.RaceTable?.Races||[];
+    const podiums = results.filter(r=>{
+      const pos = parseInt(r.Results?.[0]?.position||99);
+      return pos <= 3;
+    }).length;
+    return { entry, podiums };
+  } catch(e){ return { entry: null, podiums: 0 }; }
 }
 
 async function fetchTeamStats(constructorId){
@@ -1602,30 +1612,39 @@ function closeDetailModal(e, force){
   document.body.style.overflow='';
   setTimeout(()=>{
     document.getElementById('detail-hero-img').src='';
+    document.getElementById('detail-hero-img').style.display='';
     document.getElementById('detail-body').innerHTML='<div class="detail-loading"><div class="spinner"></div>Loading...</div>';
     document.getElementById('detail-hero-accent').style.background='';
+    document.getElementById('detail-hero').style.background='#111';
   },300);
 }
 
 async function openDriverDetail(driverId, fullName, team, number, teamCol, nationality){
   openDetailModal();
+  const heroEl=document.getElementById('detail-hero');
   const accentEl=document.getElementById('detail-hero-accent');
-  accentEl.style.background=`linear-gradient(135deg, ${teamCol}44 0%, transparent 60%)`;
+  heroEl.style.background=`linear-gradient(160deg, ${teamCol}33 0%, #0e0e0f 100%)`;
+  accentEl.style.background=`linear-gradient(135deg, ${teamCol}55 0%, transparent 60%)`;
 
   const wikiKey=DRIVER_WIKI[driverId];
-  const [imgSrc, statsEntry]=await Promise.all([
+  const [imgSrc, { entry: statsEntry, podiums }]=await Promise.all([
     wikiKey?fetchWikiImage(wikiKey):Promise.resolve(null),
     fetchDriverStats(driverId)
   ]);
 
   const imgEl=document.getElementById('detail-hero-img');
-  if(imgSrc){ imgEl.src=imgSrc; imgEl.style.display=''; }
-  else imgEl.style.display='none';
+  if(imgSrc){
+    imgEl.src=imgSrc;
+    imgEl.style.display='';
+    imgEl.onerror=()=>{ imgEl.style.display='none'; };
+  } else {
+    imgEl.style.display='none';
+  }
 
   const natFlag=NATIONALITY_FLAGS[nationality]||'🏁';
   const pts=statsEntry?Math.round(parseFloat(statsEntry.points||0)):null;
   const pos=statsEntry?.position||null;
-  const wins=statsEntry?.wins||null;
+  const wins=parseInt(statsEntry?.wins||0);
 
   document.getElementById('detail-body').innerHTML=`
     <div class="detail-tag" style="background:${teamCol}22;color:${teamCol};border:1px solid ${teamCol}44">
@@ -1635,17 +1654,19 @@ async function openDriverDetail(driverId, fullName, team, number, teamCol, natio
     <div class="detail-name">${fullName}</div>
     <div class="detail-sub">${natFlag} ${nationality} · #${number||'—'}</div>
     ${pts!==null?`<div class="detail-stats-grid">
-      <div class="detail-stat-cell"><div class="detail-stat-val">${pos||'—'}</div><div class="detail-stat-label">Championship</div></div>
+      <div class="detail-stat-cell"><div class="detail-stat-val">${pos||'—'}</div><div class="detail-stat-label">Position</div></div>
       <div class="detail-stat-cell"><div class="detail-stat-val">${pts}</div><div class="detail-stat-label">Points</div></div>
-      <div class="detail-stat-cell"><div class="detail-stat-val">${wins||0}</div><div class="detail-stat-label">Wins</div></div>
-      <div class="detail-stat-cell"><div class="detail-stat-val">${statsEntry?.wins||0}</div><div class="detail-stat-label">2025 Wins</div></div>
+      <div class="detail-stat-cell"><div class="detail-stat-val">${wins}</div><div class="detail-stat-label">Wins</div></div>
+      <div class="detail-stat-cell"><div class="detail-stat-val">${podiums}</div><div class="detail-stat-label">Podiums</div></div>
     </div>`:''}
   `;
 }
 
 async function openTeamDetail(constructorId, name, teamCol, nationality){
   openDetailModal();
+  const heroEl=document.getElementById('detail-hero');
   const accentEl=document.getElementById('detail-hero-accent');
+  heroEl.style.background=`linear-gradient(160deg, ${teamCol}33 0%, #0e0e0f 100%)`;
   accentEl.style.background=`linear-gradient(135deg, ${teamCol}55 0%, transparent 70%)`;
 
   const wikiKey=TEAM_WIKI[constructorId];
@@ -1655,13 +1676,18 @@ async function openTeamDetail(constructorId, name, teamCol, nationality){
   ]);
 
   const imgEl=document.getElementById('detail-hero-img');
-  if(imgSrc){ imgEl.src=imgSrc; imgEl.style.display=''; }
-  else imgEl.style.display='none';
+  if(imgSrc){
+    imgEl.src=imgSrc;
+    imgEl.style.display='';
+    imgEl.onerror=()=>{ imgEl.style.display='none'; };
+  } else {
+    imgEl.style.display='none';
+  }
 
   const natFlag=NATIONALITY_FLAGS[nationality]||'🏁';
   const pts=statsEntry?Math.round(parseFloat(statsEntry.points||0)):null;
   const pos=statsEntry?.position||null;
-  const wins=statsEntry?.wins||null;
+  const wins=parseInt(statsEntry?.wins||0);
 
   document.getElementById('detail-body').innerHTML=`
     <div class="detail-tag" style="background:${teamCol}22;color:${teamCol};border:1px solid ${teamCol}44">
@@ -1672,7 +1698,7 @@ async function openTeamDetail(constructorId, name, teamCol, nationality){
     ${pts!==null?`<div class="detail-stats-grid">
       <div class="detail-stat-cell"><div class="detail-stat-val">${pos||'—'}</div><div class="detail-stat-label">Position</div></div>
       <div class="detail-stat-cell"><div class="detail-stat-val">${pts}</div><div class="detail-stat-label">Points</div></div>
-      <div class="detail-stat-cell"><div class="detail-stat-val">${wins||0}</div><div class="detail-stat-label">Wins</div></div>
+      <div class="detail-stat-cell"><div class="detail-stat-val">${wins}</div><div class="detail-stat-label">Wins</div></div>
     </div>`:''}
   `;
 }
