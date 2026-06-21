@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>My Sports</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+  <style>
+    :root {
+      --bg:  #0c0b0d;
+      --srf: #141416;
+      --bdr: #1e1e22;
+      --acc: #e0181e;
+      --txt: #f2f1ee;
+      --dim: #686870;
+      --fh:  'Syne', sans-serif;
+      --fb:  'Inter', sans-serif;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { height: 100%; }
+    body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--txt);
+      font-family: var(--fb);
+      -webkit-font-smoothing: antialiased;
+    }
+    #root { height: 100%; }
+    button { background: none; border: none; cursor: pointer; color: inherit; font: inherit; padding: 0; }
+
+    /* ── App shell ─────────────────────────────── */
+    .app {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ── Nav ────────────────────────────────────── */
+    .nav {
+      height: 56px;
+      display: flex;
+      align-items: stretch;
+      padding: 0 32px;
+      flex-shrink: 0;
+      background: var(--bg);
+      border-bottom: 1px solid var(--bdr);
+      position: relative;
+      z-index: 10;
+    }
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      font-family: var(--fh);
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: 3px;
+      margin-right: auto;
+    }
+    .nav-logo em { color: var(--acc); font-style: normal; }
+    .nav-tabs { display: flex; align-items: stretch; }
+    .nav-tab {
+      display: flex;
+      align-items: center;
+      padding: 0 26px;
+      font-size: 11px;
+      letter-spacing: 2.5px;
+      font-weight: 600;
+      color: var(--dim);
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      transition: color 0.15s;
+    }
+    .nav-tab:hover { color: var(--txt); }
+    .nav-tab.active { color: var(--txt); border-bottom-color: var(--acc); }
+    .nav-end {
+      display: flex;
+      align-items: center;
+      margin-left: auto;
+      padding-left: 24px;
+      color: var(--dim);
+      font-size: 17px;
+    }
+
+    /* ── Content area ───────────────────────────── */
+    .content { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+
+    /* ── Photo placeholder ──────────────────────── */
+    .photo-ph {
+      width: 100%;
+      height: 100%;
+      background: var(--srf);
+      background-image: repeating-linear-gradient(
+        -45deg,
+        transparent 0, transparent 5px,
+        rgba(255,255,255,.016) 5px, rgba(255,255,255,.016) 10px
+      );
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .photo-ph-icon { opacity: .18; }
+    .photo-ph-label {
+      font-family: ui-monospace, monospace;
+      font-size: 9px;
+      color: rgba(255,255,255,.2);
+      text-align: center;
+      line-height: 1.7;
+      white-space: pre-line;
+      padding: 0 16px;
+    }
+
+    /* ── Hero ───────────────────────────────────── */
+    .hero {
+      height: 248px;
+      position: relative;
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+    .hero .photo-ph { position: absolute; inset: 0; height: 100%; }
+    .hero-grad {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(105deg,
+        rgba(12,11,13,.96) 0%,
+        rgba(12,11,13,.54) 50%,
+        rgba(12,11,13,.12) 100%);
+    }
+    .hero-body {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: flex-end;
+      padding: 0 40px 32px;
+    }
+    .hero-eyebrow {
+      font-size: 9px;
+      letter-spacing: 4px;
+      font-weight: 600;
+      color: var(--acc);
+      margin-bottom: 10px;
+    }
+    .hero-hed {
+      font-family: var(--fh);
+      font-size: 56px;
+      font-weight: 800;
+      line-height: .87;
+      letter-spacing: -.5px;
+    }
+    .hero-sub {
+      font-size: 11px;
+      color: var(--dim);
+      margin-top: 12px;
+      letter-spacing: .5px;
+    }
+
+    /* ── Bento grid ─────────────────────────────── */
+    .bento {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 38% 34% 1fr;
+      gap: 1px;
+      background: var(--bdr);
+      min-height: 0;
+      overflow: hidden;
+    }
+    .bento > * { background: var(--bg); overflow: hidden; }
+
+    /* ── Cell: Driver feature ───────────────────── */
+    .driver-cell { position: relative; }
+    .driver-photo { position: absolute; inset: 0; }
+    .driver-grad {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top,
+        rgba(12,11,13,.99) 0%,
+        rgba(12,11,13,.62) 38%,
+        transparent 68%);
+    }
+    .driver-info {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      padding: 24px 28px;
+    }
+    .driver-eyebrow {
+      font-size: 8px;
+      letter-spacing: 4px;
+      color: var(--acc);
+      margin-bottom: 12px;
+    }
+    .driver-numname {
+      display: flex;
+      align-items: flex-end;
+      gap: 14px;
+      margin-bottom: 12px;
+    }
+    .driver-pos {
+      font-family: var(--fh);
+      font-size: 84px;
+      font-weight: 800;
+      line-height: .8;
+    }
+    .driver-first {
+      font-family: var(--fh);
+      font-size: 27px;
+      font-weight: 700;
+      line-height: 1;
+    }
+    .driver-last {
+      font-family: var(--fh);
+      font-size: 27px;
+      font-weight: 700;
+      line-height: 1;
+      color: var(--acc);
+    }
+    .driver-stats { display: flex; gap: 24px; align-items: flex-end; }
+    .stat-lbl { font-size: 8px; color: var(--dim); letter-spacing: 2px; }
+    .stat-val { font-size: 22px; font-weight: 700; margin-top: 2px; }
+    .team-tag { display: flex; align-items: center; gap: 6px; padding-bottom: 3px; }
+    .team-bar { width: 3px; height: 14px; flex-shrink: 0; }
+    .team-nm { font-size: 12px; color: var(--dim); }
+
+    /* ── Cell: Standings ────────────────────────── */
+    .standings-col {
+      display: flex;
+      flex-direction: column;
+      padding-top: 22px;
+    }
+    .col-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: 0 26px 14px;
+      flex-shrink: 0;
+    }
+    .col-title { font-family: var(--fh); font-size: 18px; font-weight: 700; }
+    .col-meta { font-size: 9px; color: var(--dim); letter-spacing: 2px; }
+    .standings-rows { flex: 1; overflow: hidden; }
+    .st-row {
+      display: flex;
+      align-items: center;
+      padding: 8px 26px;
+      border-bottom: 1px solid var(--bdr);
+    }
+    .pos-badge {
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 700;
+      margin-right: 12px;
+      flex-shrink: 0;
+    }
+    .pos-badge.p1 { background: var(--acc); color: #fff; }
+    .pos-badge.pn { background: var(--srf); color: var(--dim); }
+    .st-driver { flex: 1; min-width: 0; }
+    .st-name { font-size: 13px; font-weight: 500; }
+    .st-name strong { font-weight: 700; }
+    .st-team {
+      font-size: 9px;
+      color: var(--dim);
+      margin-top: 1px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .tdot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+    .st-gap { font-size: 11px; color: var(--dim); margin-right: 12px; font-variant-numeric: tabular-nums; }
+    .st-pts { font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .st-pts.p1 { color: var(--acc); }
+
+    /* ── Cell: Race info ────────────────────────── */
+    .race-col { display: flex; flex-direction: column; }
+    .race-next {
+      padding: 18px 22px 14px;
+      border-bottom: 1px solid var(--bdr);
+      flex-shrink: 0;
+    }
+    .race-eyebrow { font-size: 9px; color: var(--acc); letter-spacing: 3px; margin-bottom: 8px; }
+    .race-name {
+      font-family: var(--fh);
+      font-size: 20px;
+      font-weight: 700;
+      line-height: 1.1;
+      margin-bottom: 5px;
+    }
+    .race-loc { font-size: 11px; color: var(--dim); margin-bottom: 10px; }
+    .sessions { display: flex; gap: 6px; }
+    .session { flex: 1; background: var(--srf); padding: 7px 6px; text-align: center; }
+    .session-time { font-size: 9px; color: var(--dim); margin-bottom: 2px; font-variant-numeric: tabular-nums; }
+    .session-name { font-size: 11px; font-weight: 700; }
+    .session.sess-next { background: var(--acc); }
+    .session.sess-next .session-time { color: rgba(255,255,255,.85); font-size: 10px; }
+    .session.sess-next .session-name { color: #fff; }
+    .session.sess-past { opacity: .3; }
+    /* standings toggle */
+    .standings-toggle { display: flex; }
+    .st-btn {
+      font-size: 9px; letter-spacing: 2px; font-weight: 700;
+      padding: 4px 9px; color: var(--dim);
+      border: 1px solid var(--bdr); cursor: pointer;
+      background: transparent; transition: color .15s, background .15s;
+      font-family: var(--fb);
+    }
+    .st-btn:first-child { border-right: none; }
+    .st-btn.active { color: var(--txt); background: var(--srf); }
+    .team-bar-lg { width: 3px; height: 28px; flex-shrink: 0; margin-right: 10px; }
+    .race-strip { flex-shrink: 0; height: 108px; border-bottom: 1px solid var(--bdr); }
+    .race-strip .photo-ph { height: 100%; }
+    .news-panel { flex: 1; padding: 14px 22px; overflow: hidden; }
+    .news-eyebrow { font-size: 9px; color: var(--acc); letter-spacing: 3px; margin-bottom: 12px; }
+    .news-items { display: flex; flex-direction: column; gap: 12px; }
+    .news-item { display: flex; gap: 10px; }
+    .news-thumb { width: 46px; height: 46px; flex-shrink: 0; }
+    .news-thumb .photo-ph { height: 100%; }
+    .news-hed { font-size: 11px; line-height: 1.45; color: var(--dim); }
+    .news-hed.top { font-weight: 600; color: var(--txt); }
+    .news-time { font-size: 9px; color: var(--dim); margin-top: 3px; }
+
+    /* ── Bottom nav (mobile only) ───────────────── */
+    .bottom-nav { display: none; }
+
+    /* ═══════════════════════════════════════════════
+       MOBILE  ≤ 767px
+    ═══════════════════════════════════════════════ */
+    @media (max-width: 767px) {
+
+      .app {
+        height: auto;
+        min-height: 100dvh;
+        overflow: visible;
+        padding-bottom: 56px;
+      }
+      .content { flex: none; overflow: visible; min-height: auto; }
+
+      /* Nav */
+      .nav { padding: 0 16px; height: 52px; }
+      .nav-tab { padding: 0 16px; letter-spacing: 2px; }
+
+      /* Hero */
+      .hero { height: 220px; }
+      .hero-body { padding: 0 20px 22px; }
+      .hero-hed { font-size: 38px; }
+      .hero-sub { display: none; }
+
+      /* Bento → stacked column */
+      .bento {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        background: transparent;
+        overflow: visible;
+        min-height: auto;
+      }
+
+      /* Mobile order: race first, then driver, then standings */
+      .race-col     { order: 1; border-bottom: 1px solid var(--bdr); }
+      .driver-cell  { order: 2; height: 230px; border-bottom: 1px solid var(--bdr); }
+      .standings-col{ order: 3; padding-bottom: 28px; }
+
+      /* Slim down race col on mobile */
+      .race-next { border-bottom: none; padding: 14px 20px; }
+      .race-strip { display: none; }
+      .news-panel { display: none; }
+      .sessions { gap: 4px; }
+
+      /* Standings rows fill naturally */
+      .standings-rows { overflow: visible; }
+      .st-row { padding: 10px 20px; }
+      .col-head { padding: 16px 20px 12px; }
+      .st-gap { display: none; }
+
+      /* Bottom nav */
+      .bottom-nav {
+        display: flex;
+        position: fixed;
+        bottom: 0; left: 0; right: 0;
+        height: 56px;
+        background: var(--srf);
+        border-top: 1px solid var(--bdr);
+        z-index: 100;
+      }
+      .bnav-item {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 1.5px;
+        color: var(--dim);
+        cursor: pointer;
+        transition: color .15s;
+      }
+      .bnav-item.active { color: var(--acc); }
+    }
+
+    /* ── Mobile preview mode (force via toggle) ─ */
+    body.mob-preview { background: #000; }
+    .app.mob {
+      max-width: 390px;
+      height: 100vh;
+      overflow-y: auto;
+      overflow-x: hidden;
+      margin: 0 auto;
+      border-left: 1px solid var(--bdr);
+      border-right: 1px solid var(--bdr);
+    }
+    .app.mob .content      { flex: none; overflow: visible; min-height: auto; }
+    .app.mob .nav          { padding: 0 16px; height: 52px; }
+    .app.mob .nav-tab      { padding: 0 16px; letter-spacing: 2px; }
+    .app.mob .hero         { height: 220px; }
+    .app.mob .hero-body    { padding: 0 20px 22px; }
+    .app.mob .hero-hed     { font-size: 38px; }
+    .app.mob .hero-sub     { display: none; }
+    .app.mob .bento        { display: flex; flex-direction: column; gap: 0; background: transparent; overflow: visible; min-height: auto; }
+    .app.mob .race-col     { order: 1; border-bottom: 1px solid var(--bdr); }
+    .app.mob .driver-cell  { order: 2; height: 230px; border-bottom: 1px solid var(--bdr); }
+    .app.mob .standings-col{ order: 3; padding-bottom: 28px; }
+    .app.mob .race-next    { border-bottom: none; padding: 14px 20px; }
+    .app.mob .race-strip   { display: none; }
+    .app.mob .news-panel   { display: none; }
+    .app.mob .sessions     { gap: 4px; }
+    .app.mob .standings-rows { overflow: visible; }
+    .app.mob .st-row       { padding: 10px 20px; }
+    .app.mob .col-head     { padding: 16px 20px 12px; }
+    .app.mob .st-gap       { display: none; }
+    .app.mob .bottom-nav   {
+      display: flex;
+      position: sticky;
+      bottom: 0;
+      height: 56px;
+      background: var(--srf);
+      border-top: 1px solid var(--bdr);
+      z-index: 100;
+    }
+    .app.mob .bnav-item {
+      flex: 1; display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 600; letter-spacing: 1.5px;
+      color: var(--dim); cursor: pointer; transition: color .15s;
+    }
+    .app.mob .bnav-item.active { color: var(--acc); }
+    /* viewport toggle */
+    .nav-vp { display: flex; align-items: center; gap: 0; margin-left: 16px; }
+    .vp-btn {
+      display: flex; align-items: center; justify-content: center;
+      padding: 5px 7px; color: var(--dim); transition: color .15s;
+      border: 1px solid transparent;
+    }
+    .vp-btn:hover  { color: var(--txt); }
+    .vp-btn.active { color: var(--txt); border-color: var(--bdr); background: var(--srf); }
+
+    /* ── Podcast tab ─────────────────────────────── */
+    .pod-view { flex:1; display:flex; flex-direction:column; min-height:0; overflow:hidden; }
+    .pod-hero { height:252px; position:relative; flex-shrink:0; overflow:hidden; }
+    .pod-bg { position:absolute; inset:0; }
+    .pod-hero-grad { position:absolute; inset:0; background:linear-gradient(110deg,rgba(12,11,13,.97) 0%,rgba(12,11,13,.56) 54%,rgba(12,11,13,.16) 100%); }
+    .pod-hero-body { position:absolute; inset:0; display:flex; align-items:flex-end; padding:0 40px 28px; gap:18px; }
+    .pod-hero-sq { width:84px; height:84px; flex-shrink:0; border:1px solid rgba(255,255,255,.12); }
+    .pod-hero-sq .photo-ph { height:100%; }
+    .pod-eyebrow { font-size:9px; color:var(--acc); letter-spacing:4px; margin-bottom:7px; }
+    .pod-hero-title { font-family:var(--fh); font-size:30px; font-weight:800; line-height:1.05; margin-bottom:8px; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+    .pod-hero-meta { font-size:10px; color:var(--dim); display:flex; gap:10px; align-items:center; }
+    .pod-play-btn { display:inline-flex; align-items:center; gap:7px; background:var(--acc); color:#fff; border:none; cursor:pointer; font-size:10px; font-weight:700; letter-spacing:2px; padding:8px 16px; margin-top:11px; font-family:var(--fb); transition:opacity .15s; }
+    .pod-play-btn:hover { opacity:.85; }
+    .pod-body { flex:1; overflow-y:auto; min-height:0; padding-bottom:80px; }
+    .pod-list-head { display:flex; align-items:center; justify-content:space-between; padding:18px 40px 14px; border-bottom:1px solid var(--bdr); }
+    .pod-list-title { font-family:var(--fh); font-size:15px; font-weight:700; }
+    .pod-add-btn { display:flex; align-items:center; gap:6px; font-size:9px; font-weight:700; letter-spacing:2px; color:var(--dim); border:1px solid var(--bdr); padding:6px 12px; background:transparent; cursor:pointer; font-family:var(--fb); transition:color .15s,border-color .15s; }
+    .pod-add-btn:hover { color:var(--txt); border-color:var(--dim); }
+    .pod-filters { display:flex; border-bottom:1px solid var(--bdr); padding:0 40px; overflow-x:auto; flex-shrink:0; }
+    .pod-filter-btn { font-size:9px; letter-spacing:2px; font-weight:700; padding:10px 14px; color:var(--dim); border:none; border-bottom:2px solid transparent; margin-bottom:-1px; white-space:nowrap; cursor:pointer; background:transparent; font-family:var(--fb); transition:color .15s; }
+    .pod-filter-btn:hover { color:var(--txt); }
+    .pod-filter-btn.active { color:var(--txt); border-bottom-color:var(--acc); }
+    .pod-ep-row { display:flex; align-items:center; padding:14px 40px; gap:16px; border-bottom:1px solid var(--bdr); cursor:pointer; transition:background .12s; }
+    .pod-ep-row:hover { background:var(--srf); }
+    .pod-ep-row.ep-on { background:rgba(224,24,30,.06); }
+    .pod-ep-art { width:52px; height:52px; flex-shrink:0; border:1px solid rgba(255,255,255,.06); }
+    .pod-ep-art .photo-ph { height:100%; }
+    .pod-ep-show { font-size:8px; color:var(--acc); letter-spacing:3px; margin-bottom:3px; }
+    .pod-ep-title { font-size:13px; font-weight:500; line-height:1.35; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+    .pod-ep-meta { font-size:9px; color:var(--dim); margin-top:3px; }
+    .pod-ep-play { width:34px; height:34px; border-radius:50%; border:1px solid var(--bdr); display:flex; align-items:center; justify-content:center; flex-shrink:0; color:var(--dim); transition:color .15s,border-color .15s; }
+    .pod-ep-row:hover .pod-ep-play { color:var(--txt); border-color:var(--dim); }
+    .pod-ep-row.ep-on .pod-ep-play { color:var(--acc); border-color:var(--acc); }
+    .pod-player { position:fixed; bottom:0; left:0; right:0; z-index:200; height:64px; background:var(--srf); border-top:1px solid var(--bdr); display:flex; align-items:center; gap:14px; padding:0 24px; }
+    .pod-player-art { width:40px; height:40px; flex-shrink:0; border:1px solid rgba(255,255,255,.08); }
+    .pod-player-art .photo-ph { height:100%; }
+    .pod-player-info { min-width:0; flex:0 1 200px; }
+    .pod-player-show { font-size:8px; color:var(--acc); letter-spacing:2px; }
+    .pod-player-title { font-size:11px; font-weight:600; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+    .pod-scrubber { flex:1; max-width:360px; display:flex; flex-direction:column; gap:5px; }
+    .pod-track { height:2px; background:var(--bdr); cursor:pointer; border-radius:1px; }
+    .pod-fill { height:100%; background:var(--acc); border-radius:1px; pointer-events:none; }
+    .pod-times { display:flex; justify-content:space-between; font-size:9px; color:var(--dim); font-variant-numeric:tabular-nums; }
+    .pod-ctrl { width:34px; height:34px; border-radius:50%; background:var(--acc); border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#fff; flex-shrink:0; transition:opacity .15s; }
+    .pod-ctrl:hover { opacity:.85; }
+    .pod-dismiss { background:transparent; border:none; cursor:pointer; color:var(--dim); padding:4px; flex-shrink:0; transition:color .15s; }
+    .pod-dismiss:hover { color:var(--txt); }
+    .rss-overlay { position:fixed; inset:0; z-index:500; background:rgba(0,0,0,.72); display:flex; align-items:center; justify-content:center; padding:24px; }
+    .rss-modal { background:var(--srf); border:1px solid var(--bdr); padding:28px; width:100%; max-width:440px; }
+    .rss-modal-title { font-family:var(--fh); font-size:20px; font-weight:700; margin-bottom:6px; }
+    .rss-modal-sub { font-size:11px; color:var(--dim); margin-bottom:20px; line-height:1.6; }
+    .rss-inp { width:100%; background:var(--bg); border:1px solid var(--bdr); color:var(--txt); font-size:13px; font-family:var(--fb); padding:10px 14px; margin-bottom:10px; outline:none; }
+    .rss-inp:focus { border-color:var(--acc); }
+    .rss-btns { display:flex; gap:10px; justify-content:flex-end; margin-top:16px; }
+    .rss-cancel-b { font-size:10px; letter-spacing:2px; font-weight:700; color:var(--dim); padding:8px 16px; border:1px solid var(--bdr); background:transparent; cursor:pointer; font-family:var(--fb); }
+    .rss-ok-b { font-size:10px; letter-spacing:2px; font-weight:700; color:#fff; padding:8px 16px; border:none; background:var(--acc); cursor:pointer; font-family:var(--fb); }
+    @media (max-width:767px) {
+      .pod-hero { height:210px; }
+      .pod-hero-body { padding:0 20px 20px; gap:14px; }
+      .pod-hero-title { font-size:22px; }
+      .pod-hero-sq { width:60px; height:60px; }
+      .pod-list-head,.pod-ep-row { padding-left:20px; padding-right:20px; }
+      .pod-filters { padding:0 20px; }
+      .pod-player { bottom:56px; }
+      .pod-body { padding-bottom:136px; }
+    }
+    .app.mob .pod-hero { height:210px; }
+    .app.mob .pod-hero-body { padding:0 20px 20px; gap:14px; }
+    .app.mob .pod-hero-title { font-size:22px; }
+    .app.mob .pod-hero-sq { width:60px; height:60px; }
+    .app.mob .pod-list-head,.app.mob .pod-ep-row { padding-left:20px; padding-right:20px; }
+    .app.mob .pod-filters { padding:0 20px; }
+    .mob-preview .pod-player { bottom:56px; width:390px; left:50%; transform:translateX(-50%); }
+    .mob-preview .pod-body { padding-bottom:136px; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+
+    /* ── Data ─────────────────────────────────── */
+    const F1_DRIVERS = [
+      { pos:1, last:'VERSTAPPEN', first:'Max',     team:'Red Bull Racing', pts:246, gap:'—',    color:'#3671C6' },
+      { pos:2, last:'NORRIS',     first:'Lando',   team:'McLaren',         pts:219, gap:'−27',  color:'#FF8000' },
+      { pos:3, last:'LECLERC',    first:'Charles', team:'Ferrari',         pts:195, gap:'−51',  color:'#E8002D' },
+      { pos:4, last:'PIASTRI',    first:'Oscar',   team:'McLaren',         pts:178, gap:'−68',  color:'#FF8000' },
+      { pos:5, last:'HAMILTON',   first:'Lewis',   team:'Ferrari',         pts:152, gap:'−94',  color:'#E8002D' },
+      { pos:6, last:'RUSSELL',    first:'George',  team:'Mercedes',        pts:134, gap:'−112', color:'#27F4D2' },
+      { pos:7, last:'ALONSO',     first:'Fernando',team:'Aston Martin',    pts:87,  gap:'−159', color:'#358C75' },
+      { pos:8, last:'PÉREZ',      first:'Sergio',  team:'Red Bull Racing', pts:79,  gap:'−167', color:'#3671C6' },
+    ];
+
+    const F1_NEWS = [
+      { hed:'Verstappen dominates Monza for eighth win of the season', time:'2H AGO' },
+      { hed:'McLaren reveal major upgrade package ahead of British GP', time:'5H AGO' },
+      { hed:"Hamilton: 'Ferrari has the best car we've had in a decade'", time:'1D AGO' },
+    ];
+
+    const F1_CONSTRUCTORS = [
+      { pos:1, name:'McLaren',         pts:397, color:'#FF8000' },
+      { pos:2, name:'Ferrari',         pts:347, color:'#E8002D' },
+      { pos:3, name:'Red Bull Racing', pts:325, color:'#3671C6' },
+      { pos:4, name:'Mercedes',        pts:280, color:'#27F4D2' },
+      { pos:5, name:'Aston Martin',    pts:182, color:'#358C75' },
+      { pos:6, name:'Williams',        pts:98,  color:'#64C4FF' },
+      { pos:7, name:'Alpine',          pts:63,  color:'#0093CC' },
+      { pos:8, name:'Haas',            pts:50,  color:'#B6BABD' },
+    ];
+
+    const SESSIONS = [
+      { name:'FP1',   display:'Fri 14:00', date: new Date('2026-07-06T13:00:00Z') },
+      { name:'Quali', display:'Sat 15:00', date: new Date('2026-07-07T14:00:00Z') },
+      { name:'Race',  display:'Sun 16:00', date: new Date('2026-07-08T15:00:00Z') },
+    ];
+
+    /* ── Shared: photo placeholder ─────────────── */
+    function Photo({ label, className, style }) {
+      return (
+        <div className={`photo-ph ${className || ''}`} style={style}>
+          <svg className="photo-ph-icon" width="20" height="20" viewBox="0 0 24 24" fill="none"
+            stroke="rgba(255,255,255,.9)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+            <circle cx="12" cy="13" r="4"/>
+          </svg>
+          {label && <div className="photo-ph-label">{label}</div>}
+        </div>
+      );
+    }
+
+    /* ── Nav ───────────────────────────────────── */
+    function Nav({ tab, setTab, mob, setMob }) {
+      return (
+        <nav className="nav">
+          <div className="nav-logo">MY<em>SPORTS</em></div>
+          <div className="nav-tabs">
+            {['F1','NHL','NFL','PODS'].map(t => (
+              <button key={t} className={`nav-tab ${tab===t?'active':''}`} onClick={() => setTab(t)}>{t}</button>
+            ))}
+          </div>
+          <div className="nav-end">
+            <div className="nav-vp">
+              <button className={`vp-btn ${!mob?'active':''}`} title="Desktop" onClick={() => setMob(false)}>
+                <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
+                  <rect x="1" y="2" width="14" height="9.5" rx="1" stroke="currentColor" strokeWidth="1.4"/>
+                  <path d="M5 14h6M8 11.5V14" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+                </svg>
+              </button>
+              <button className={`vp-btn ${mob?'active':''}`} title="Mobile" onClick={() => setMob(true)}>
+                <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
+                  <rect x="4.5" y="1" width="7" height="14" rx="1.5" stroke="currentColor" strokeWidth="1.4"/>
+                  <circle cx="8" cy="12.6" r=".8" fill="currentColor"/>
+                </svg>
+              </button>
+            </div>
+            <span style={{marginLeft:14,fontSize:17,color:'var(--dim)'}}>⚙</span>
+          </div>
+        </nav>
+      );
+    }
+
+    /* ── Hero ──────────────────────────────────── */
+    function Hero() {
+      return (
+        <div className="hero">
+          <Photo label={'F1 RACE ACTION PHOTO\nBritish Grand Prix · Silverstone 2026'} />
+          <div className="hero-grad" />
+          <div className="hero-body">
+            <div>
+              <div className="hero-eyebrow">FORMULA 1 · ROUND 13 OF 24</div>
+              <div className="hero-hed">BRITISH<br />GRAND PRIX</div>
+              <div className="hero-sub">Silverstone Circuit · 6–8 July 2026 · Race Sun 16:00 BST</div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    /* ── Bento: Driver feature ─────────────────── */
+    function DriverFeature() {
+      const d = F1_DRIVERS[0];
+      return (
+        <div className="driver-cell">
+          <div className="driver-photo">
+            <Photo label={`DRIVER PHOTO\n${d.first} ${d.last} · Championship Leader`} />
+          </div>
+          <div className="driver-grad" />
+          <div className="driver-info">
+            <div className="driver-eyebrow">CHAMPIONSHIP LEADER</div>
+            <div className="driver-numname">
+              <div className="driver-pos">{d.pos}</div>
+              <div style={{paddingBottom:4}}>
+                <div className="driver-first">{d.first}</div>
+                <div className="driver-last">{d.last}</div>
+              </div>
+            </div>
+            <div className="driver-stats">
+              {[['PTS',d.pts],['WINS','8'],['POLES','6']].map(([l,v]) => (
+                <div key={l}>
+                  <div className="stat-lbl">{l}</div>
+                  <div className="stat-val">{v}</div>
+                </div>
+              ))}
+              <div className="team-tag" style={{alignSelf:'flex-end',paddingBottom:3}}>
+                <div className="team-bar" style={{background:d.color}} />
+                <div className="team-nm">{d.team}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    /* ── Bento: Standings ──────────────────────── */
+    function StandingsCol() {
+      const [view, setView] = React.useState('drivers');
+      return (
+        <div className="standings-col">
+          <div className="col-head">
+            <div className="col-title">Standings</div>
+            <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:6}}>
+              <div className="standings-toggle">
+                <button className={`st-btn ${view==='drivers'?'active':''}`} onClick={()=>setView('drivers')}>DRV</button>
+                <button className={`st-btn ${view==='teams'?'active':''}`} onClick={()=>setView('teams')}>TEAM</button>
+              </div>
+              <div className="col-meta">12 / 24 RACES</div>
+            </div>
+          </div>
+          <div className="standings-rows">
+            {view === 'drivers' && F1_DRIVERS.map((d,i) => (
+              <div key={d.last} className="st-row">
+                <div className={`pos-badge ${i===0?'p1':'pn'}`}>{d.pos}</div>
+                <div className="st-driver">
+                  <div className="st-name">{d.first} <strong>{d.last}</strong></div>
+                  <div className="st-team">
+                    <div className="tdot" style={{background:d.color}} />
+                    {d.team}
+                  </div>
+                </div>
+                <div className="st-gap">{d.gap}</div>
+                <div className={`st-pts ${i===0?'p1':''}`}>{d.pts}</div>
+              </div>
+            ))}
+            {view === 'teams' && F1_CONSTRUCTORS.map((c,i) => (
+              <div key={c.name} className="st-row">
+                <div className={`pos-badge ${i===0?'p1':'pn'}`}>{c.pos}</div>
+                <div className="team-bar-lg" style={{background:c.color}} />
+                <div className="st-driver">
+                  <div className="st-name"><strong>{c.name}</strong></div>
+                </div>
+                <div className={`st-pts ${i===0?'p1':''}`}>{c.pts}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    /* ── Sessions with countdown ─────────────── */
+    function Sessions() {
+      const [now, setNow] = React.useState(() => Date.now());
+      React.useEffect(() => {
+        const id = setInterval(() => setNow(Date.now()), 1000);
+        return () => clearInterval(id);
+      }, []);
+      const nextIdx = SESSIONS.findIndex(s => s.date.getTime() > now);
+      return (
+        <div className="sessions">
+          {SESSIONS.map((s, i) => {
+            const isPast = s.date.getTime() <= now;
+            const isNext = i === nextIdx;
+            let timeDisplay = s.display;
+            if (isPast) {
+              timeDisplay = 'DONE';
+            } else if (isNext) {
+              const diff = s.date.getTime() - now;
+              const d = Math.floor(diff / 86400000);
+              const h = Math.floor((diff % 86400000) / 3600000);
+              const m = Math.floor((diff % 3600000) / 60000);
+              const sec = Math.floor((diff % 60000) / 1000);
+              timeDisplay = d > 0
+                ? `${d}d ${String(h).padStart(2,'0')}h ${String(m).padStart(2,'0')}m`
+                : `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+            }
+            return (
+              <div key={s.name} className={`session${isNext?' sess-next':''}${isPast?' sess-past':''}`}>
+                <div className="session-time">{timeDisplay}</div>
+                <div className="session-name">{s.name}</div>
+              </div>
+            );
+          })}
+        </div>
+      );
+    }
+
+    /* ── Bento: Race info ──────────────────────── */
+    function RaceCol() {
+      return (
+        <div className="race-col">
+          <div className="race-next">
+            <div className="race-eyebrow">NEXT RACE</div>
+            <div className="race-name">British<br />Grand Prix</div>
+            <div className="race-loc">Silverstone · 6–8 Jul 2026</div>
+            <Sessions />
+          </div>
+          <div className="race-strip">
+            <Photo label={'TEAM / CIRCUIT PHOTO\nSilverstone pit lane'} />
+          </div>
+          <div className="news-panel">
+            <div className="news-eyebrow">LATEST</div>
+            <div className="news-items">
+              {F1_NEWS.map((n,i) => (
+                <div key={i} className="news-item">
+                  <div className="news-thumb"><Photo label="" /></div>
+                  <div>
+                    <div className={`news-hed ${i===0?'top':''}`}>{n.hed}</div>
+                    <div className="news-time">{n.time}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    /* ── F1 view ───────────────────────────────── */
+    function F1View() {
+      return (
+        <div className="content">
+          <Hero />
+          <div className="bento">
+            <DriverFeature />
+            <StandingsCol />
+            <RaceCol />
+          </div>
+        </div>
+      );
+    }
+
+    /* ── Placeholder for other sports ─────────── */
+    function ComingSoon({ sport }) {
+      return (
+        <div className="content" style={{alignItems:'center',justifyContent:'center',gap:12,display:'flex',flexDirection:'column',flex:1}}>
+          <div style={{fontFamily:'var(--fh)',fontSize:48,fontWeight:800,color:'var(--bdr)'}}>
+            {sport}
+          </div>
+          <div style={{fontSize:11,color:'var(--dim)',letterSpacing:2}}>COMING SOON</div>
+        </div>
+      );
+    }
+
+    /* ── Podcast data ─────────────────────────────── */
+    const PODCAST_SHOWS_DEF = [
+      { id:'p1',      name:'P1 with Matt & Tommy',     sport:'F1',  color:'#e0181e' },
+      { id:'ath-hky', name:'The Athletic Hockey Show', sport:'NHL', color:'#64C4FF' },
+      { id:'ath-nfl', name:'The Athletic NFL Show',    sport:'NFL', color:'#7ED957' },
+    ];
+    const PODCAST_EPS = [
+      { id:'e1', showId:'p1',      title:'Silverstone Preview: Can McLaren Dethrone Verstappen?',  dur:'1h 12m', date:'3 DAYS AGO', sec:4320 },
+      { id:'e2', showId:'p1',      title:'Canadian GP Review: Norris Fights Back in Montreal',     dur:'58m',    date:'2 WKS AGO',  sec:3480 },
+      { id:'e3', showId:'p1',      title:'Monaco Debrief: Controversy at the Chicane',             dur:'1h 4m',  date:'4 WKS AGO',  sec:3840 },
+      { id:'e4', showId:'ath-hky', title:'Stanley Cup Final Preview: Who Has the Edge?',           dur:'52m',    date:'1 DAY AGO',  sec:3120 },
+      { id:'e5', showId:'ath-hky', title:'Trade Deadline Fallout & Playoff Seeding Battle',        dur:'47m',    date:'1 WK AGO',   sec:2820 },
+      { id:'e6', showId:'ath-nfl', title:'Draft Class Deep Dive: Best Value Picks of 2026',       dur:'1h 8m',  date:'5 DAYS AGO', sec:4080 },
+      { id:'e7', showId:'ath-nfl', title:"Offseason Winners & Losers: Who Made the Right Moves?", dur:'55m',    date:'2 WKS AGO',  sec:3300 },
+    ];
+
+    /* ── Mini player ────────────────────────────────── */
+    function PodPlayer({ ep, shows, playing, onToggle, onClose, progress, onSeek }) {
+      const show = shows.find(s => s.id === ep.showId) || {};
+      const fmt = n => `${Math.floor(n/60)}:${String(Math.floor(n)%60).padStart(2,'0')}`;
+      return (
+        <div className="pod-player">
+          <div className="pod-player-art"><Photo label="" /></div>
+          <div className="pod-player-info">
+            <div className="pod-player-show">{show.sport} · {show.name}</div>
+            <div className="pod-player-title">{ep.title}</div>
+          </div>
+          <div className="pod-scrubber">
+            <div className="pod-track" onClick={e => { const r=e.currentTarget.getBoundingClientRect(); onSeek((e.clientX-r.left)/r.width); }}>
+              <div className="pod-fill" style={{width:`${progress*100}%`}} />
+            </div>
+            <div className="pod-times"><span>{fmt(progress*ep.sec)}</span><span>{fmt(ep.sec)}</span></div>
+          </div>
+          <button className="pod-ctrl" onClick={onToggle}>
+            {playing
+              ? <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+              : <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>}
+          </button>
+          <button className="pod-dismiss" onClick={onClose}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+      );
+    }
+
+    /* ── RSS modal ──────────────────────────────────── */
+    function RSSModal({ onAdd, onClose }) {
+      const [url, setUrl] = React.useState('');
+      const [name, setName] = React.useState('');
+      const [sport, setSport] = React.useState('F1');
+      return (
+        <div className="rss-overlay" onClick={e => e.target===e.currentTarget && onClose()}>
+          <div className="rss-modal">
+            <div className="rss-modal-title">Add Podcast Feed</div>
+            <div className="rss-modal-sub">Paste an RSS feed URL to subscribe to a new show. It will appear in your filter bar immediately.</div>
+            <input className="rss-inp" placeholder="https://feeds.example.com/show.rss"
+              value={url} onChange={e => setUrl(e.target.value)} autoFocus />
+            <input className="rss-inp" placeholder="Show name (optional)"
+              value={name} onChange={e => setName(e.target.value)} />
+            <div>
+              <div style={{fontSize:9,color:'var(--dim)',letterSpacing:2,marginBottom:8}}>SPORT</div>
+              <div style={{display:'flex',gap:6}}>
+                {['F1','NHL','NFL','Other'].map(s => (
+                  <button key={s} className={`st-btn ${sport===s?'active':''}`} onClick={() => setSport(s)}>{s}</button>
+                ))}
+              </div>
+            </div>
+            <div className="rss-btns">
+              <button className="rss-cancel-b" onClick={onClose}>CANCEL</button>
+              <button className="rss-ok-b" onClick={() => {
+                if (!url.trim()) return;
+                onAdd({ id:`rss-${Date.now()}`, name:name.trim()||'New Podcast', sport, color:'#686870', rss:url.trim() });
+              }}>ADD FEED</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    /* ── Podcast view ───────────────────────────────── */
+    function PodcastView({ shows, setShows, currentEp, playing, progress, onPlay }) {
+      const [filter, setFilter] = React.useState('all');
+      const [showRSS, setShowRSS] = React.useState(false);
+      const filteredEps = filter === 'all' ? PODCAST_EPS : PODCAST_EPS.filter(e => e.showId === filter);
+      const featuredEp = filteredEps[0];
+      const featuredShow = featuredEp ? shows.find(s => s.id === featuredEp.showId) : null;
+      return (
+        <div className="pod-view">
+          {featuredEp && (
+            <div className="pod-hero">
+              <div className="pod-bg"><Photo label={featuredShow ? `${featuredShow.name}\nPODCAST ARTWORK` : 'PODCAST ARTWORK'} /></div>
+              <div className="pod-hero-grad" />
+              <div className="pod-hero-body">
+                <div className="pod-hero-sq"><Photo label="" /></div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div className="pod-eyebrow">{featuredShow ? `${featuredShow.sport} · ${featuredShow.name}` : 'LATEST EPISODE'}</div>
+                  <div className="pod-hero-title">{featuredEp.title}</div>
+                  <div className="pod-hero-meta"><span>{featuredEp.dur}</span><span>·</span><span>{featuredEp.date}</span></div>
+                  <button className="pod-play-btn" onClick={() => onPlay(featuredEp)}>
+                    {currentEp && currentEp.id===featuredEp.id && playing
+                      ? <><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> PAUSE</>
+                      : <><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg> PLAY</>}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+          <div className="pod-body">
+            <div className="pod-list-head">
+              <div className="pod-list-title">Episodes</div>
+              <button className="pod-add-btn" onClick={() => setShowRSS(true)}>
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                ADD FEED
+              </button>
+            </div>
+            <div className="pod-filters">
+              <button className={`pod-filter-btn ${filter==='all'?'active':''}`} onClick={() => setFilter('all')}>ALL</button>
+              {shows.map(s => (
+                <button key={s.id} className={`pod-filter-btn ${filter===s.id?'active':''}`} onClick={() => setFilter(s.id)}>{s.name.toUpperCase()}</button>
+              ))}
+            </div>
+            {filteredEps.map(ep => {
+              const show = shows.find(s => s.id === ep.showId);
+              const isOn = currentEp && currentEp.id === ep.id;
+              const isPlay = isOn && playing;
+              return (
+                <div key={ep.id} className={`pod-ep-row${isOn?' ep-on':''}`} onClick={() => onPlay(ep)}>
+                  <div className="pod-ep-art"><Photo label="" /></div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div className="pod-ep-show">{show ? `${show.sport} · ${show.name}` : ''}</div>
+                    <div className="pod-ep-title">{ep.title}</div>
+                    <div className="pod-ep-meta">{ep.dur} · {ep.date}</div>
+                  </div>
+                  <div className="pod-ep-play">
+                    {isPlay
+                      ? <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+                      : <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          {showRSS && <RSSModal onAdd={s => { setShows(prev => [...prev, s]); setShowRSS(false); }} onClose={() => setShowRSS(false)} />}
+        </div>
+      );
+    }
+
+    /* ── App root ──────────────────────────────── */
+    function App() {
+      const [tab, setTab] = React.useState('F1');
+      const [mob, setMob] = React.useState(false);
+      const [podShows, setPodShows] = React.useState(() => {
+        try { const s=JSON.parse(localStorage.getItem('mySports_pods_shows')||'null'); return s&&s.length?s:PODCAST_SHOWS_DEF; }
+        catch(e) { return PODCAST_SHOWS_DEF; }
+      });
+      const [podEp, setPodEp] = React.useState(null);
+      const [podPlaying, setPodPlaying] = React.useState(false);
+      const [podProgress, setPodProgress] = React.useState(0);
+      React.useEffect(() => { localStorage.setItem('mySports_pods_shows', JSON.stringify(podShows)); }, [podShows]);
+      React.useEffect(() => {
+        if (!podPlaying || !podEp) return;
+        const id = setInterval(() => setPodProgress(p => { if(p>=1){setPodPlaying(false);return 1;} return Math.min(1,p+1/podEp.sec); }), 1000);
+        return () => clearInterval(id);
+      }, [podPlaying, podEp]);
+      const handlePlay = ep => {
+        if (podEp && podEp.id===ep.id) { setPodPlaying(p => !p); }
+        else { setPodEp(ep); setPodProgress(0); setPodPlaying(true); }
+      };
+      React.useEffect(() => {
+        document.body.classList.toggle('mob-preview', mob);
+        return () => document.body.classList.remove('mob-preview');
+      }, [mob]);
+      return (
+        <div className={`app${mob?' mob':''}`}>
+          <Nav tab={tab} setTab={setTab} mob={mob} setMob={setMob} />
+          {tab === 'F1'  && <F1View />}
+          {tab === 'NHL' && <ComingSoon sport="NHL" />}
+          {tab === 'NFL' && <ComingSoon sport="NFL" />}
+          {tab === 'PODS' && (
+            <PodcastView shows={podShows} setShows={setPodShows}
+              currentEp={podEp} playing={podPlaying} progress={podProgress}
+              onPlay={handlePlay} />
+          )}
+          {podEp && (
+            <PodPlayer ep={podEp} shows={podShows} playing={podPlaying}
+              onToggle={() => setPodPlaying(p => !p)}
+              onClose={() => { setPodEp(null); setPodPlaying(false); }}
+              progress={podProgress} onSeek={setPodProgress} />
+          )}
+          <div className="bottom-nav">
+            {['F1','NHL','NFL','PODS'].map(t => (
+              <div key={t} className={`bnav-item ${t===tab?'active':''}`} onClick={() => setTab(t)}>{t}</div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+
+  <template id="__bundler_thumbnail">
+    <svg viewBox="0 0 160 120" xmlns="http://www.w3.org/2000/svg">
+      <rect width="160" height="120" fill="#0c0b0d"/>
+      <rect x="0" y="0" width="160" height="38" fill="#141416"/>
+      <text x="12" y="24" fill="#f2f1ee" font-size="9" font-weight="bold" font-family="sans-serif" letter-spacing="2">MY<tspan fill="#e0181e">SPORTS</tspan></text>
+      <rect x="0" y="38" width="61" height="82" fill="#131315"/>
+      <rect x="62" y="38" width="54" height="82" fill="#0c0b0d"/>
+      <rect x="117" y="38" width="43" height="82" fill="#0c0b0d"/>
+      <text x="30" y="82" fill="#e0181e" font-size="28" font-weight="bold" font-family="sans-serif" text-anchor="middle">1</text>
+      <rect x="62" y="46" width="30" height="2" fill="#e0181e" rx="1"/>
+      <rect x="62" y="54" width="46" height="1" fill="#1e1e22"/>
+      <rect x="62" y="62" width="46" height="1" fill="#1e1e22"/>
+      <rect x="62" y="70" width="46" height="1" fill="#1e1e22"/>
+      <rect x="117" y="46" width="34" height="8" fill="#1e1e22" rx="1"/>
+    </svg>
+  </template>
+</body>
+</html>
